@@ -1,0 +1,618 @@
+<div id="page-community" class="page-container">
+    <style>
+        .glass-card { 
+            background: rgba(18,22,40,0.7); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 16px; 
+            padding: 16px; 
+            margin-bottom: 15px; 
+            color: #ccd6f0; 
+        }
+        .title-main { color: #f0b90b; font-size: 18px; font-weight: bold; }
+        .desc { color: #a3adc9; font-size: 14px; margin-bottom: 8px; }
+        .highlight { color: #4ef0a8; font-weight: 700; }
+        .highlight-cyan { color: #4ef0a8; font-weight: 700; }
+        .highlight-green { color: #4ecca3; font-weight: 700; }
+        .badge {
+            background: #cd7f32; color: #000; padding: 2px 12px;
+            border-radius: 20px; font-size: 12px; font-weight: 700; margin-left: 8px;
+        }
+        .badge-gold { background: #f7c744; }
+        .badge-silver { background: #b0b8c0; }
+        .hint-text { color: #f0b90b; font-size: 12px; margin: 4px 0 8px; }
+        .hint-unlock { color: #a3adc9; font-size: 11px; margin: 2px 0 6px; }
+        .hint-unlock span { color: #4ef0a8; font-weight: 600; }
+        .hint-fund { color: #a3adc9; font-size: 10px; margin: 2px 0 6px; }
+        .progress-bar-container {
+            width: 100%; height: 20px; background: #1a1f35;
+            border-radius: 10px; margin: 8px 0; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; border-radius: 10px; transition: width 0.3s;
+            background: linear-gradient(90deg, #4ecca3, #f0b90b);
+        }
+        .stat-row {
+            display: flex; justify-content: space-between;
+            font-size: 13px; color: #ccd6f0; margin: 4px 0;
+        }
+        .stat-value { color: #4ef0a8; font-weight: 700; }
+        .price-row {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px; font-size: 13px; color: #a3adc9;
+        }
+        .price-value { color: #4ef0a8; font-weight: 700; }
+        .price-source-tag { font-size: 10px; opacity: 0.7; margin-left: 2px; }
+        
+        .unlock-card {
+            border: 2px solid #f0b90b; border-radius: 20px;
+            padding: 16px; margin-bottom: 12px;
+            transition: border-color 0.3s, opacity 0.3s;
+            background: #0a0d14;
+        }
+        .unlock-card.locked { border: 2px solid #555; opacity: 0.7; background: #080b10; }
+        .unlock-card.unlocked { border: 2px solid #4ecca3; opacity: 1; background: #0a0d14; }
+        
+        .btn {
+            background: linear-gradient(135deg, #e94560, #b92b4a);
+            border: none; color: white; font-weight: 700;
+            padding: 14px 18px; border-radius: 18px; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 8px 18px rgba(233,69,96,0.3);
+            width: 100%; font-size: 14px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.6; box-shadow: none; transform: none; }
+        .btn-gold {
+            background: linear-gradient(135deg, #f0b90b, #e8a000);
+            box-shadow: 0 8px 18px rgba(240,185,11,0.3);
+        }
+        .tab-container {
+            display: flex; background: #0c0f1c; border-radius: 16px;
+            padding: 4px; margin: 12px 0; border: 1px solid #2d3355;
+        }
+        .tab {
+            flex: 1; text-align: center; padding: 10px; border-radius: 14px;
+            font-weight: 600; color: #9aa0c0; cursor: pointer; transition: 0.2s;
+        }
+        .tab.active { background: #e94560; color: white; }
+        .input-field {
+            background: #0d1020; border: 1px solid #394056;
+            border-radius: 16px; padding: 14px 16px; color: white;
+            width: 100%; margin: 10px 0 12px; font-size: 15px; outline: none;
+        }
+        .input-field:focus { border-color: #e94560; }
+        .info-box {
+            background: #0a0d16; border-radius: 14px; padding: 12px;
+            margin-top: 12px; font-size: 14px; border-left: 4px solid #e94560;
+            word-break: break-word; color: #ccd6f0;
+        }
+        .asset-box {
+            background: #0f1422; border-radius: 16px;
+            padding: 14px; text-align: center; border: 1px solid #2a2f52;
+        }
+        .asset-label { font-size: 12px; color: #a3adc9; margin-bottom: 4px; }
+        .asset-value { font-size: 16px; }
+        .live-dot {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            animation: livePulse 1.5s infinite;
+        }
+        @keyframes livePulse {
+            0% { background: #e94560; box-shadow: 0 0 6px #e94560; }
+            33% { background: #f0b90b; box-shadow: 0 0 6px #f0b90b; }
+            66% { background: #4ecca3; box-shadow: 0 0 6px #4ecca3; }
+            100% { background: #e94560; box-shadow: 0 0 6px #e94560; }
+        }
+        .rate-value { font-size: 18px; font-weight: 700; }
+        .rate-label { font-size: 10px; color: #888; margin-top: 4px; }
+        .rate-condition { font-size: 10px; color: #666; margin-top: 2px; }
+    </style>
+
+    <!-- 信息卡 -->
+    <div class="glass-card">
+        <h2 style="display: flex; align-items: center; font-size: 1.1rem; color: #f0b90b; margin-bottom: 12px;">
+            <span class="live-dot" style="margin-right: 8px;"></span>节点信息
+        </h2>
+        <div class="stat-row">
+            <span>🏷️ 等级：<span class="stat-value" id="cardRole">--</span></span>
+            <span id="cardActiveBadge" style="font-size:12px;">--</span>
+        </div>
+        <div class="stat-row">
+            <span>👥 推荐人：<span class="stat-value" id="cardReferrer">--</span></span>
+        </div>
+        <div class="stat-row">
+            <span>📅 激活时间：<span class="stat-value" id="cardActivated">--</span></span>
+        </div>
+        <div class="stat-row">
+            <span>🤝 直推人数：<span class="stat-value" id="cardInvited">--</span></span>
+            <span>📋 当前日领币：<span class="stat-value" id="cardDailyRate">--</span></span>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:14px;">
+            <div class="asset-box" style="flex:1;">
+                <div class="asset-label">💰 MYK</div>
+                <div class="stat-value asset-value" id="cardMYK">--</div>
+            </div>
+            <div class="asset-box" style="flex:1;">
+                <div class="asset-label">💵 USDT</div>
+                <div class="stat-value asset-value" id="cardUSDT">--</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 激活初级卡片 -->
+    <div class="glass-card">
+        <h2 style="font-size: 1.1rem; color: #f0b90b; display: flex; align-items: center; margin-bottom: 4px;">
+            🥉 激活初级
+            <span class="badge">PRIMARY</span>
+        </h2>
+        <div class="tab-container" id="activateTabSwitch">
+            <div class="tab active" data-tab="usdt">💵 USDT激活</div>
+            <div class="tab" data-tab="myk">💎 MYK激活</div>
+        </div>
+        <div id="panelUSDT">
+            <div class="desc">支付 <span class="highlight">2 USDT</span>，获得 <span class="highlight">1.0%</span> 日奖币</div>
+            <div class="hint-text">推荐人由链上绑定关系自动识别</div>
+            <button class="btn" id="activateUSDTBtn">💵 支付2 USDT激活</button>
+            <div class="info-box" id="activateUSDTResult" style="display:none;"></div>
+        </div>
+        <div id="panelMYK" style="display:none;">
+            <div class="desc">支付 <span class="highlight">2 USDT</span> 等值MYK，获得 <span class="highlight">1.0%</span> 日奖币</div>
+            <div class="price-row">
+                <span>建议：<span class="price-value" id="suggestedMYK">--</span> MYK <span class="price-source-tag">(实时价)</span></span>
+            </div>
+            <input class="input-field" id="mykAmount" type="number" placeholder="MYK数量" value="150" step="0.1" min="0">
+            <button class="btn" id="activateMYKBtn">💸 支付MYK激活</button>
+            <div class="info-box" id="activateMYKResult" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- 角色费率卡片 -->
+    <div class="glass-card">
+        <div style="display:flex;gap:10px;">
+            <div class="asset-box" style="flex:1;">
+                <div class="asset-label">🥉 PRIMARY</div>
+                <div class="rate-value" style="color:#4ecca3;">1%</div>
+                <div class="rate-label">日领币</div>
+                <div class="rate-condition">已激活节点</div>
+            </div>
+            <div class="asset-box" style="flex:1;">
+                <div class="asset-label">🥈 MIDDLE</div>
+                <div class="rate-value" style="color:#4ecca3;">1.3%</div>
+                <div class="rate-label">日领币</div>
+                <div class="rate-condition">已激活直推≥3</div>
+            </div>
+            <div class="asset-box" style="flex:1;">
+                <div class="asset-label">🥇 COMMUNITY</div>
+                <div class="rate-value" style="color:#f0b90b;">1.6%</div>
+                <div class="rate-label">日领币</div>
+                <div class="rate-condition">持有社区身份</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 权益卡片 -->
+    <div class="glass-card" style="padding: 12px 8px;">
+        <h2 style="font-size: 1.1rem; color: #f0b90b; margin-bottom: 12px; text-align: center;">🔓 权益卡片</h2>
+        <div class="unlock-card locked" id="middleCard">
+            <h2 style="font-size: 1.1rem;">🔓 MIDDLE 权益<span class="badge badge-silver" style="font-size:10px;">权益卡</span></h2>
+            <div class="desc" id="middleStatus" style="font-size:13px;">🔒未解锁</div>
+            <div class="hint-text" style="font-size:11px;">解锁规则：已激活直推 ≥ 3 解锁更多权益</div>
+            <div class="desc" style="font-size:13px;">权益：享受 <span class="highlight">1.3%</span> 日奖币</div>
+            <div class="stat-row" style="font-size:12px;">
+                <span>当前已激活直推：<span class="stat-value" id="middleInvitedCount">--</span>人</span>
+                <span>需达目标：<span class="stat-value">3</span>人</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="middleProgress" style="width:0%;background:linear-gradient(90deg,#f0b90b,#e94560);"></div>
+            </div>
+        </div>
+        <div class="unlock-card locked" id="community1Card">
+            <h2 style="font-size:1.1rem;">第一社区权益<span class="badge badge-gold" style="font-size:10px;">FIRST</span></h2>
+            <div class="desc" id="community1Status" style="font-size:13px;">🔒未解锁</div>
+            <div class="hint-unlock" id="community1Unlock">解锁规则：支付 0.5 USDT 获取 FIRST 身份 (<span>永久</span>)</div>
+            <div class="hint-fund">资金用途：社区建设＋去中心化基金合约自动添加LP维持市值</div>
+            <div class="desc" style="font-size:13px;">最高权益：享受 <span class="highlight">1.6%</span> 日奖币 + <span class="highlight-green">1.6%/天×120天</span></div>
+            <div class="hint-text" style="font-size:11px;color:#f0b90b;">🏆 团队奖励：伞下无限代业绩 10% 奖励</div>
+            <button class="btn btn-gold upgrade-btn" data-amount="0.5" style="margin-top:10px;font-size:14px;">🔓 立即解锁权益</button>
+            <div class="info-box upgrade-result" style="display:none;"></div>
+        </div>
+        <div class="unlock-card locked" id="community2Card">
+            <h2 style="font-size:1.1rem;">第二社区权益<span class="badge badge-gold" style="font-size:10px;">SECOND</span></h2>
+            <div class="desc" id="community2Status" style="font-size:13px;">🔒未解锁</div>
+            <div class="hint-unlock" id="community2Unlock">解锁规则：支付 1 USDT 获取 SECOND 身份 (<span>永久</span>)</div>
+            <div class="hint-fund">资金用途：社区建设＋去中心化基金合约自动添加LP维持市值</div>
+            <div class="desc" style="font-size:13px;">最高权益：享受 <span class="highlight">1.6%</span> 日奖币 + <span class="highlight-green">1.6%/天×180天</span></div>
+            <div class="hint-text" style="font-size:11px;color:#f0b90b;">🏆 团队奖励：享受第一社区权益 + 最高拿 <span class="highlight-cyan">第二层</span> 社区收益的 <span class="highlight-cyan">50%</span> 奖励</div>
+            <button class="btn btn-gold upgrade-btn" data-amount="1" style="margin-top:10px;font-size:14px;">🔓 立即解锁权益</button>
+            <div class="info-box upgrade-result" style="display:none;"></div>
+        </div>
+        <div class="unlock-card locked" id="community3Card">
+            <h2 style="font-size:1.1rem;">第三社区权益<span class="badge badge-gold" style="font-size:10px;">THIRD</span></h2>
+            <div class="desc" id="community3Status" style="font-size:13px;">🔒未解锁</div>
+            <div class="hint-unlock" id="community3Unlock">解锁规则：支付 2 USDT 获取 THIRD 身份 (<span>永久</span>)</div>
+            <div class="hint-fund">资金用途：社区建设＋去中心化基金合约自动添加LP维持市值</div>
+            <div class="desc" style="font-size:13px;">最高权益：享受 <span class="highlight">1.6%</span> 日奖币 + <span class="highlight-green">1.6%/天×240天</span></div>
+            <div class="hint-text" style="font-size:11px;color:#f0b90b;">🏆 团队奖励：享受第一社区权益 + 最高拿 <span class="highlight-cyan">第三层</span> 社区收益的 <span class="highlight-cyan">50%</span> 奖励</div>
+            <button class="btn btn-gold upgrade-btn" data-amount="2" style="margin-top:10px;font-size:14px;">🔓 立即解锁权益</button>
+            <div class="info-box upgrade-result" style="display:none;"></div>
+        </div>
+        <div class="unlock-card locked" id="community4Card">
+            <h2 style="font-size:1.1rem;">第四社区权益<span class="badge badge-gold" style="font-size:10px;">FOURTH</span></h2>
+            <div class="desc" id="community4Status" style="font-size:13px;">🔒未解锁</div>
+            <div class="hint-unlock" id="community4Unlock">解锁规则：MYK销毁累计 ≥ 2.5 USDT 等值 MYK 获取 FOURTH (<span>永久</span>)</div>
+            <div class="hint-fund">资金用途：社区建设＋去中心化基金合约自动添加LP维持市值</div>
+            <div class="desc" style="font-size:13px;">最高权益：享受 <span class="highlight">1.6%</span> 日奖币 + <span class="highlight-green">1.6%/天×300天</span> + C4分红池 <span class="highlight-green">35%</span></div>
+            <div class="hint-text" style="font-size:11px;color:#f0b90b;">🏆 团队奖励：享受第一社区权益 + 最高拿 <span class="highlight-cyan">第四层</span> 社区收益的 <span class="highlight-cyan">50%</span> 奖励</div>
+            <div class="hint-text" style="font-size:10px;color:#f0b90b;">SIXTH：MYK销毁累计 ≥ 2000U</div>
+            <div class="price-row" style="margin-top:8px;"><span>当前等值MYK (含0.5%手续费)：<span class="price-value" id="fourthMykAmount">--</span> MYK</span></div>
+            <button class="btn btn-gold upgrade-btn" data-amount="2.5" style="margin-top:10px;font-size:14px;">🔥 销毁MYK解锁FOURTH</button>
+            <div class="info-box upgrade-result" style="display:none;"></div>
+        </div>
+        <div class="unlock-card locked" id="community5Card">
+            <h2 style="font-size:1.1rem;">第五社区权益<span class="badge badge-gold" style="font-size:10px;">FIFTH+</span></h2>
+            <div class="desc" id="community5Status" style="font-size:13px;">🔒未解锁</div>
+            <div class="hint-unlock" id="community5Unlock">解锁规则：MYK销毁累计 ≥ 3 USDT 等值 MYK 获取 FIFTH (<span>永久</span>)</div>
+            <div class="hint-fund">资金用途：社区建设＋去中心化基金合约自动添加LP维持市值</div>
+            <div class="desc" style="font-size:13px;">最高权益：享受 <span class="highlight">1.6%</span> 日奖币 + <span class="highlight-green">1.6%/天×360天</span> + C5分红池 <span class="highlight-green">25%</span></div>
+            <div class="hint-text" style="font-size:11px;color:#f0b90b;">🏆 团队奖励：享受第一社区权益 + 最高拿 <span class="highlight-cyan">第五层</span> 社区收益的 <span class="highlight-cyan">50%</span> 奖励</div>
+            <div class="hint-text" style="font-size:10px;color:#f0b90b;">SIXTH：MYK销毁累计 ≥ 2000U</div>
+            <div class="price-row" style="margin-top:8px;"><span>当前等值MYK (含0.5%手续费)：<span class="price-value" id="fifthMykAmount">--</span> MYK</span></div>
+            <button class="btn btn-gold upgrade-btn" data-amount="3" style="margin-top:10px;font-size:14px;">🔥 销毁MYK解锁FIFTH</button>
+            <div class="info-box upgrade-result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+    var communityInitAttempts = 0;
+    var communityMaxAttempts = 20;
+
+    function communityInit() {
+        if (typeof web3 === 'undefined') {
+            communityInitAttempts++;
+            if (communityInitAttempts < communityMaxAttempts) { setTimeout(communityInit, 300); }
+            return;
+        }
+
+        var MYK = '0xc23CfEeC6D188D627C85106f682D9eb38d94192a';
+        var RP = '0xf7C62F0902a0D18897D69d5f5a6ee5AB668614e5';
+        var GOV = '0x937E4bF22CfCBCF770464dd48B82D1721ECbB7f4';
+        var USDT = '0x55d398326f99059fF775485246999027B3197955';
+        var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+        var PAIR = '0xCa4F4a81ed8a5f953f0Ea07d7Ee4e65969a33156';
+
+        var CARD_EXPIRY_MAP = {
+            community1: 'community1Unlock', community2: 'community2Unlock',
+            community3: 'community3Unlock', community4: 'community4Unlock', community5: 'community5Unlock'
+        };
+
+        var isProcessing = false;
+        var cachedSpotPrice = 0;
+
+        function $(id) { return document.getElementById(id); }
+        function n(w) { return parseFloat(Web3.utils.fromWei(w + '', 'ether')); }
+        function a6(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
+
+        function encodeCall(sig, types, values) {
+            var s = web3.eth.abi.encodeFunctionSignature(sig);
+            if (!types || !types.length) return s;
+            return s + web3.eth.abi.encodeParameters(types, values).slice(2);
+        }
+
+        function parseError(e) {
+            var m = (e && e.message) || '';
+            var mc = m.match(/execution reverted:\s*(.+?)(?:"|$)/);
+            if (mc) return mc[1].trim();
+            var m2 = m.match(/reason="([^"]+)"/);
+            if (m2) return m2[1];
+            return m.slice(0, 200);
+        }
+
+        function lock() { if (isProcessing) { alert('请等待当前操作完成'); return false; } isProcessing = true; return true; }
+        function unlock() { isProcessing = false; }
+
+        async function waitForTransaction(txHash) {
+            for (var i = 0; i < 30; i++) {
+                try { var r = await web3.eth.getTransactionReceipt(txHash); if (r) { if (r.status) return r; else throw new Error('交易失败'); } }
+                catch (e) { if (i === 29) throw e; }
+                await new Promise(function(r) { setTimeout(r, 2000); });
+            }
+            throw new Error('超时');
+        }
+
+        async function fetchUserGovTier() {
+            var ua = window.currentAccount; if (!web3 || !ua) return 0;
+            try { return parseInt(web3.eth.abi.decodeParameter('uint8', await web3.eth.call({ to: GOV, data: encodeCall('getCommunityTier(address)', ['address'], [ua]) }))); }
+            catch (e) { try { return parseInt(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: GOV, data: encodeCall('getCommunityTier(address)', ['address'], [ua]) }))); } catch (e2) {} }
+            return 0;
+        }
+
+        async function fetchUserBasic() {
+            var ua = window.currentAccount;
+            if (!web3 || !ua) return null;
+            try {
+                var data = await web3.eth.call({ to: RP, data: encodeCall('getUserBasic(address)', ['address'], [ua]) });
+                var u = web3.eth.abi.decodeParameters(
+                    ['address','uint256','uint256','uint256','uint256','uint8','uint256','bool','uint256','uint256'],
+                    data
+                );
+                var role = parseInt(u[5]);
+                var govTier = await fetchUserGovTier();
+                if (govTier >= 4) role = 3;
+                return {
+                    referrer: u[0], invited: parseInt(u[1]), activatedInvited: parseInt(u[2]),
+                    directPrimaryCount: parseInt(u[3]), directCommunityCount: parseInt(u[4]),
+                    role: role, activatedAt: parseInt(u[6]), isActive: u[7],
+                    pendingActivationMYK: n(u[8]), activityBalance: n(u[9])
+                };
+            } catch (e) {
+                try {
+                    var userData = web3.eth.abi.decodeParameters(
+                        ['address','uint256','uint256','uint256','uint256','uint256','uint256','uint256','uint256','uint256','uint8','bool','uint256','uint256'],
+                        await web3.eth.call({ to: RP, data: encodeCall('users(address)', ['address'], [ua]) })
+                    );
+                    var role2 = parseInt(userData[10]);
+                    var govTier2 = await fetchUserGovTier();
+                    if (govTier2 >= 4) role2 = 3;
+                    return {
+                        referrer: userData[0], invited: parseInt(userData[1]), activatedInvited: parseInt(userData[2]),
+                        directPrimaryCount: parseInt(userData[3]), directCommunityCount: parseInt(userData[4]),
+                        role: role2, activatedAt: parseInt(userData[7]), isActive: userData[11],
+                        pendingActivationMYK: n(userData[12]), activityBalance: n(userData[13])
+                    };
+                } catch (e2) { return null; }
+            }
+        }
+
+        async function fetchPrices() {
+            if (!web3) return;
+            try {
+                try { cachedSpotPrice = n(await web3.eth.call({ to: RP, data: encodeCall('getCurrentPrice()') })); }
+                catch (e1) {
+                    try {
+                        var ra = [{"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}];
+                        var rc = new web3.eth.Contract(ra, ROUTER);
+                        cachedSpotPrice = n((await rc.methods.getAmountsOut(Web3.utils.toWei('1','ether'), [MYK, USDT]).call())[1]);
+                    } catch (e2) {
+                        try {
+                            var pa = [{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"}];
+                            var pc = new web3.eth.Contract(pa, PAIR);
+                            var t0 = await pc.methods.token0().call();
+                            var rv = await pc.methods.getReserves().call();
+                            var r0 = BigInt(rv[0]), r1 = BigInt(rv[1]);
+                            if (r0 === BigInt(0) || r1 === BigInt(0)) throw new Error('0');
+                            var rU = t0.toLowerCase() === USDT.toLowerCase() ? r0 : r1;
+                            var rM = t0.toLowerCase() === USDT.toLowerCase() ? r1 : r0;
+                            cachedSpotPrice = parseFloat(Web3.utils.fromWei(((rU * BigInt(10 ** 18)) / rM).toString(), 'ether'));
+                        } catch (e3) {}
+                    }
+                }
+                updateActivateSuggestion(); updateAllMykSuggestions();
+            } catch (e) {}
+        }
+
+        function getSpotPrice() { return cachedSpotPrice; }
+
+        function updateActivateSuggestion() {
+            if (cachedSpotPrice > 0) {
+                var suggested = (2 / cachedSpotPrice * 1.05).toFixed(4);
+                var sm = $('suggestedMYK'); if (sm) sm.textContent = suggested;
+                var ma = $('mykAmount'); if (ma) { ma.value = suggested; ma.setAttribute('data-default', suggested); }
+            }
+        }
+
+        async function fetchNodeInfo() {
+            var ua = window.currentAccount;
+            if (!ua || !web3) return;
+            try {
+                var basic = await fetchUserBasic();
+                if (!basic) return;
+
+                var isActive = basic.isActive;
+                var invited = basic.invited;
+                var activatedInvited = basic.activatedInvited;
+                var rpRole = basic.role;
+                var referrer = basic.referrer;
+                var govTier = await fetchUserGovTier();
+
+                var ci = $('cardInvited'); if (ci) ci.textContent = invited;
+
+                var dailyRate = '--';
+                if (rpRole >= 3) dailyRate = '1.6%';
+                else if (rpRole >= 2) dailyRate = '1.3%';
+                else if (rpRole >= 1) dailyRate = '1.0%';
+
+                var roleName = '无';
+                if (govTier >= 6) roleName = '👑 SIXTH';
+                else if (govTier >= 5) roleName = '👑 FIFTH';
+                else if (govTier >= 4) roleName = '🥇 FOURTH';
+                else if (govTier >= 3) roleName = '🥇 THIRD';
+                else if (govTier >= 2) roleName = '🥇 SECOND';
+                else if (govTier >= 1) roleName = '🥇 FIRST';
+                else if (rpRole >= 3) roleName = '🥇 COMMUNITY';
+                else if (rpRole >= 2) roleName = '🥈 MIDDLE';
+                else if (rpRole >= 1) roleName = '🥉 PRIMARY';
+
+                var cr = $('cardRole'); if (cr) cr.textContent = roleName;
+                var cdr = $('cardDailyRate'); if (cdr) cdr.textContent = dailyRate;
+                var cab = $('cardActiveBadge');
+                if (cab) cab.innerHTML = isActive ? '<span style="color:#4ecca3;background:rgba(78,204,163,0.15);padding:2px 10px;border-radius:12px;">✅已激活</span>' : '<span style="color:#e94560;background:rgba(233,69,96,0.15);padding:2px 10px;border-radius:12px;">❌未激活</span>';
+                var crf = $('cardReferrer'); if (crf) { crf.textContent = referrer === '0x0000000000000000000000000000000000000000' ? '无' : a6(referrer); crf.style.color = referrer === '0x0000000000000000000000000000000000000000' ? '#888' : '#4ef0a8'; }
+                var ca = $('cardActivated'); if (ca) ca.textContent = isActive ? '已激活' : '未激活';
+
+                // MIDDLE 解锁判断：只看 activatedInvited >= 3
+                var mic2 = $('middleInvitedCount'); if (mic2) mic2.textContent = activatedInvited;
+                var mp = $('middleProgress'); if (mp) mp.style.width = Math.min(100, (activatedInvited / 3) * 100).toFixed(1) + '%';
+                var mc = $('middleCard'), ms = $('middleStatus');
+                if (activatedInvited >= 3) {
+                    if (mc) { mc.classList.remove('locked'); mc.classList.add('unlocked'); }
+                    if (ms) { ms.textContent = '🔓已解锁'; ms.style.color = '#4ecca3'; }
+                } else {
+                    if (mc) { mc.classList.add('locked'); mc.classList.remove('unlocked'); }
+                    if (ms) { ms.textContent = '🔒未解锁'; ms.style.color = '#a3adc9'; }
+                }
+
+                try { var cm = $('cardMYK'); if (cm) cm.textContent = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: MYK, data: encodeCall('balanceOf(address)', ['address'], [ua]) }))).toFixed(4); } catch (e) {}
+                try { var cu = $('cardUSDT'); if (cu) cu.textContent = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: USDT, data: encodeCall('balanceOf(address)', ['address'], [ua]) }))).toFixed(4); } catch (e) {}
+            } catch (e) {}
+        }
+
+        function setupActivateTabs() {
+            var tabs = document.querySelectorAll('#activateTabSwitch .tab');
+            if (!tabs.length) return;
+            tabs.forEach(function(t) {
+                t.addEventListener('click', function() {
+                    tabs.forEach(function(x) { x.classList.remove('active'); });
+                    this.classList.add('active');
+                    var tb = this.dataset.tab;
+                    var pu = $('panelUSDT'); if (pu) pu.style.display = tb === 'usdt' ? 'block' : 'none';
+                    var pm = $('panelMYK'); if (pm) pm.style.display = tb === 'myk' ? 'block' : 'none';
+                    if (tb === 'myk') updateActivateSuggestion();
+                });
+            });
+        }
+
+        async function activateUSDT() {
+            var ua = window.currentAccount; if (!ua) { alert('请先连接钱包'); return; } if (!lock()) return;
+            var b = $('activateUSDTBtn'), el = $('activateUSDTResult'); if (!b || !el) return;
+            el.style.display = 'block'; el.innerHTML = '⏳ 授权USDT...'; b.disabled = true;
+            try {
+                var fee = Web3.utils.toWei('2', 'ether');
+                var aTx = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: USDT, data: encodeCall('approve(address,uint256)', ['address','uint256'], [RP, fee]) }] });
+                el.innerHTML = '⏳ 等待授权确认...'; await waitForTransaction(aTx);
+                el.innerHTML = '⏳ 激活中...';
+                var acTx = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: RP, data: encodeCall('activateWithUSDT()') }] });
+                el.innerHTML = '⏳ 等待激活确认...'; await waitForTransaction(acTx);
+                el.innerHTML = '✅ 激活成功！'; el.style.borderLeftColor = '#4ecca3'; el.style.background = 'rgba(78,204,163,0.1)';
+                setTimeout(function() { refreshAllData(); }, 3000);
+            } catch (e) { el.innerHTML = (parseError(e).indexOf('referrer') !== -1) ? '⚠️ 推荐人无效' : '❌ ' + parseError(e); }
+            finally { b.disabled = false; unlock(); }
+        }
+
+        async function activateMYK() {
+            var ua = window.currentAccount; if (!ua) { alert('请先连接钱包'); return; } if (!lock()) return;
+            var b = $('activateMYKBtn'), el = $('activateMYKResult'), amEl = $('mykAmount'); if (!b || !el) return;
+            var am = amEl ? amEl.value : '0';
+            if (!am || parseFloat(am) <= 0) { alert('请输入有效的MYK数量'); return; }
+            b.disabled = true; b.textContent = '处理中...'; el.style.display = 'block';
+            try {
+                var requiredMYK = (2 / cachedSpotPrice * 1.05).toFixed(4);
+                var sm = $('suggestedMYK'); if (sm) sm.textContent = requiredMYK;
+                if (amEl) amEl.setAttribute('data-default', requiredMYK);
+                if (parseFloat((amEl ? amEl.value : am) || am) < parseFloat(requiredMYK)) {
+                    if (amEl) amEl.value = requiredMYK;
+                    el.innerHTML = '⚠️ 需至少 ' + requiredMYK + ' MYK，已自动填入';
+                    el.style.borderLeftColor = '#f0b90b'; el.style.background = 'rgba(240,185,11,0.1)';
+                    b.disabled = false; b.textContent = '💸 支付MYK激活'; unlock(); return;
+                }
+                b.textContent = '激活中...'; el.innerHTML = '⏳ 激活中...';
+                await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: MYK, data: encodeCall('transfer(address,uint256)', ['address','uint256'], [RP, Web3.utils.toWei(amEl ? amEl.value : am, 'ether')]) }] });
+                el.innerHTML = '✅ 激活成功！'; el.style.borderLeftColor = '#4ecca3'; el.style.background = 'rgba(78,204,163,0.1)';
+                setTimeout(function() { refreshAllData(); }, 3000);
+            } catch (e) { el.innerHTML = '❌ ' + parseError(e); }
+            finally { b.disabled = false; b.textContent = '💸 支付MYK激活'; unlock(); }
+        }
+
+        async function fetchCommunityExpiry() {
+            var ua = window.currentAccount; if (!web3 || !ua) return;
+            try {
+                var userTier = await fetchUserGovTier();
+                for (var cardId in CARD_EXPIRY_MAP) {
+                    if (!CARD_EXPIRY_MAP.hasOwnProperty(cardId)) continue;
+                    var el = $(CARD_EXPIRY_MAP[cardId]); if (!el) continue;
+                    var span = el.querySelector('span'); if (!span) continue;
+                    span.textContent = '永久';
+                }
+                var tierCards = { 1: ['community1Card','community1Status'], 2: ['community2Card','community2Status'], 3: ['community3Card','community3Status'], 4: ['community4Card','community4Status'], 5: ['community5Card','community5Status'], 6: ['community5Card','community5Status'] };
+                for (var t = 1; t <= 6; t++) {
+                    var ids = tierCards[t]; if (!ids) continue;
+                    if (ids[0] && ids[1]) { var ce = $(ids[0]), se = $(ids[1]); if (ce) { ce.classList.add('locked'); ce.classList.remove('unlocked'); } if (se) { se.textContent = '🔒未解锁'; se.style.color = '#a3adc9'; } }
+                }
+                if (userTier >= 1 && userTier <= 6) {
+                    var tier = userTier >= 5 ? 5 : userTier; var ids2 = tierCards[tier];
+                    if (ids2) { var ce2 = $(ids2[0]), se2 = $(ids2[1]); if (ce2) { ce2.classList.remove('locked'); ce2.classList.add('unlocked'); } if (se2) { se2.textContent = '🔓已解锁'; se2.style.color = '#4ecca3'; } }
+                }
+            } catch (e) {}
+        }
+
+        async function refreshAllData() {
+            await fetchPrices();
+            await fetchNodeInfo();
+            await fetchCommunityExpiry();
+            updateAllMykSuggestions();
+        }
+
+        function updateAllMykSuggestions() {
+            var sp = getSpotPrice();
+            if (sp > 0) {
+                var fe = $('fourthMykAmount'); if (fe) fe.textContent = (2.5 / sp * 1.055).toFixed(4);
+                var fie = $('fifthMykAmount'); if (fie) fie.textContent = (3 / sp * 1.055).toFixed(4);
+            } else {
+                var fe2 = $('fourthMykAmount'); if (fe2) fe2.textContent = '价格加载中...';
+                var fie2 = $('fifthMykAmount'); if (fie2) fie2.textContent = '价格加载中...';
+            }
+        }
+
+        async function upgradeWithUSDT(amount) {
+            var ua = window.currentAccount; if (!ua) { alert('请先连接钱包'); return; } if (!lock()) return;
+            var btn = document.querySelector('.upgrade-btn[data-amount="' + amount + '"]');
+            var el = btn ? btn.nextElementSibling : null; if (!btn || !el) return;
+            btn.disabled = true; btn.textContent = '处理中...'; el.style.display = 'block';
+            try {
+                var fee = Web3.utils.toWei(String(amount), 'ether');
+                el.innerHTML = '⏳ 正在授权 ' + amount + ' USDT...';
+                var aTx = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: USDT, data: encodeCall('approve(address,uint256)', ['address','uint256'], [GOV, fee]) }] });
+                el.innerHTML = '⏳ 等待授权确认...'; await waitForTransaction(aTx);
+                el.innerHTML = '⏳ 升级中...';
+                var uTx = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: GOV, gas: '0xF4240', data: encodeCall('upgradeWithUSDT(uint256)', ['uint256'], [fee]) }] });
+                el.innerHTML = '⏳ 等待升级确认...'; await waitForTransaction(uTx);
+                el.innerHTML = '✅ 解锁成功！'; el.style.borderLeftColor = '#f0b90b'; el.style.background = 'rgba(240,185,11,0.1)';
+                btn.style.display = 'none'; setTimeout(function() { refreshAllData(); }, 3000);
+            } catch (e) { var m = parseError(e); el.innerHTML = (m.indexOf('User denied') !== -1 || m.indexOf('rejected') !== -1) ? '⚠️ 交易已取消' : (m.indexOf('insufficient') !== -1) ? '⚠️ 余额不足' : '❌ ' + m; }
+            finally { btn.disabled = false; btn.textContent = '🔓 立即解锁权益'; unlock(); }
+        }
+
+        async function burnForTier(amount) {
+            var ua = window.currentAccount; if (!ua) { alert('请先连接钱包'); return; } if (!lock()) return;
+            var btn = document.querySelector('.upgrade-btn[data-amount="' + amount + '"]');
+            var el = btn ? btn.nextElementSibling : null; if (!btn || !el) return;
+            btn.disabled = true; btn.textContent = '处理中...'; el.style.display = 'block';
+            try {
+                el.innerHTML = '⏳ 获取实时价格...'; await fetchPrices();
+                var sp = getSpotPrice();
+                if (sp <= 0) { alert('无法获取现货价格'); unlock(); btn.disabled = false; btn.textContent = '🔥 销毁MYK解锁'; return; }
+                var mykAmount = Web3.utils.toWei(String((amount / sp) * 1.055), 'ether');
+                el.innerHTML = '⏳ 将销毁 ' + parseFloat(Web3.utils.fromWei(mykAmount, 'ether')).toFixed(4) + ' MYK';
+                el.innerHTML = '⏳ 授权 MYK...';
+                var aTx = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: MYK, data: encodeCall('approve(address,uint256)', ['address','uint256'], [GOV, mykAmount]) }] });
+                el.innerHTML = '⏳ 等待授权确认...'; await waitForTransaction(aTx);
+                el.innerHTML = '⏳ 销毁中...';
+                var bTx = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: GOV, gas: '0xF4240', data: encodeCall('burnForTier(uint256)', ['uint256'], [mykAmount]) }] });
+                el.innerHTML = '⏳ 等待销毁确认...'; await waitForTransaction(bTx);
+                el.innerHTML = '✅ 解锁成功！'; el.style.borderLeftColor = '#f0b90b'; el.style.background = 'rgba(240,185,11,0.1)';
+                btn.style.display = 'none'; setTimeout(function() { refreshAllData(); }, 3000);
+            } catch (e) { var m = parseError(e); el.innerHTML = (m.indexOf('User denied') !== -1 || m.indexOf('rejected') !== -1) ? '⚠️ 交易已取消' : (m.indexOf('insufficient') !== -1) ? '⚠️ 余额不足' : '❌ ' + m; }
+            finally { btn.disabled = false; btn.textContent = '🔥 销毁MYK解锁'; unlock(); }
+        }
+
+        function setupUpgradeButtons() {
+            document.querySelectorAll('.upgrade-btn').forEach(function(b) {
+                b.addEventListener('click', function() { var amt = parseFloat(this.dataset.amount); if (amt >= 2.5) { burnForTier(amt); } else { upgradeWithUSDT(amt); } });
+            });
+        }
+
+        function doInit() {
+            setupActivateTabs(); setupUpgradeButtons();
+            var aub = $('activateUSDTBtn'); if (aub) aub.addEventListener('click', activateUSDT);
+            var amb = $('activateMYKBtn'); if (amb) amb.addEventListener('click', activateMYK);
+            if (typeof web3 !== 'undefined' && web3 && window.currentAccount) { refreshAllData(); }
+            else { fetchPrices(); }
+            document.addEventListener('walletConnected', function() { refreshAllData(); });
+            setInterval(function() { if (typeof web3 !== 'undefined' && web3 && window.currentAccount) { refreshAllData(); } }, 60000);
+        }
+
+        doInit();
+    }
+
+    communityInit();
+    </script>
+</div>
