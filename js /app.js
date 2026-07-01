@@ -1,119 +1,260 @@
-// ============================================================
-//  钱包连接逻辑
-// ============================================================
 
-let isConnected = false;
-let currentAccount = null;
-let mockBalance = 12.5;
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Potato DEX</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        body {
+            background: radial-gradient(circle at 30% 10%, #1e2a4a, #0b0f1a);
+            color: #ccd6f0;
+            display: flex; justify-content: center; min-height: 100vh;
+        }
+        .mobile-container {
+            width: 100%; max-width: 414px;
+            padding: 70px 15px 80px 15px; position: relative; min-height: 100vh;
+        }
+        header {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 414px; z-index: 1000;
+            background: rgba(18, 22, 40, 0.7);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 15px 15px 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo-area { display: flex; align-items: center; font-size: 18px; font-weight: bold; color: #f7c744; cursor: pointer; }
+        .logo-icon { 
+            width: 24px; height: 24px; 
+            background: linear-gradient(135deg, #f0b90b, #e8a000); 
+            margin-right: 8px; border-radius: 50%; 
+            position: relative;
+        }
+        .logo-icon::after {
+            content: 'P';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px; font-weight: 900; color: #1e2a4a;
+        }
+        .wallet-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid #2d325a;
+            padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #fff;
+            display: flex; align-items: center; cursor: pointer;
+        }
+        .wallet-btn.connected { border-color: #4ecca3; }
+        .wallet-dot { width: 6px; height: 6px; background: #e94560; border-radius: 50%; margin-right: 6px; transition: 0.3s; }
+        .wallet-dot.connected-dot { background: #4ecca3; }
 
-function generateMockAddress() {
-    const chars = '0123456789abcdef';
-    let address = '0x';
-    for (let i = 0; i < 40; i++) {
-        address += chars[Math.floor(Math.random() * 16)];
-    }
-    return address;
-}
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 414px;
+            background: rgba(18, 22, 40, 0.7);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; justify-content: space-around; padding: 10px 0; z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 10px; cursor: pointer; transition: 0.3s; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .nav-item.active { color: #f0b90b; }
+        .nav-icon { width: 24px; height: 24px; margin-bottom: 4px; border-radius: 4px; display: block; }
+        .nav-icon.placeholder { background-color: currentColor; opacity: 0.3; }
+        .nav-item.active .nav-icon.placeholder { background-color: #f0b90b; opacity: 1; }
 
-function formatAddress(address) {
-    if (!address) return '';
-    return address.substring(0, 6) + '...' + address.substring(address.length - 4);
-}
+        .toast {
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+            background: #0f1422; border: 1px solid #394056; border-left: 4px solid #e94560;
+            color: #ccd6f0; padding: 10px 20px; border-radius: 8px; font-size: 14px;
+            z-index: 9999; display: none; max-width: 90%; text-align: center;
+            backdrop-filter: blur(8px);
+        }
+        .toast.success { border-left-color: #4ecca3; }
+        .toast.error { border-left-color: #e94560; }
 
-function toggleWallet() {
-    if (isConnected) {
-        disconnectWallet();
-    } else {
-        connectWallet();
-    }
-}
+        #page-container { min-height: 60vh; }
+    </style>
+</head>
+<body>
+    <div id="toast" class="toast"></div>
+    <div class="mobile-container">
+        <header>
+            <div class="logo-area" onclick="switchTab('trade')">
+                <div class="logo-icon"></div>Potato DEX
+            </div>
+            <button id="walletConnectBtn" class="wallet-btn" onclick="toggleWallet()">
+                <span id="walletDot" class="wallet-dot"></span>
+                <span id="walletStatus">连接钱包</span>
+            </button>
+        </header>
+        <div id="page-container"></div>
+        
+        <div class="bottom-nav" id="bottomNav">
+            <div class="nav-item" data-tab="assets">
+                <div class="nav-icon placeholder"></div>资产
+            </div>
+            <div class="nav-item" data-tab="markets">
+                <div class="nav-icon placeholder"></div>领币
+            </div>
+            <div class="nav-item active" data-tab="trade">
+                <div class="nav-icon placeholder"></div>交易
+            </div>
+            <div class="nav-item" data-tab="ecosystem">
+                <div class="nav-icon placeholder"></div>生态
+            </div>
+            <div class="nav-item" data-tab="community">
+                <div class="nav-icon placeholder"></div>社区
+            </div>
+        </div>
+    </div>
 
-function connectWallet() {
-    showToast('正在连接钱包...', 'info');
-    setTimeout(() => {
-        const address = generateMockAddress();
-        currentAccount = address;
-        isConnected = true;
-        updateWalletUI();
-        showToast('钱包连接成功!', 'success');
-    }, 800);
-}
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script>
+        window.isConnected = false;
+        window.currentAccount = null;
 
-function disconnectWallet() {
-    isConnected = false;
-    currentAccount = null;
-    updateWalletUI();
-    showToast('已断开钱包连接', 'info');
-}
+        var pageMap = {
+            'assets': 'assets.html',
+            'markets': 'predict.html',
+            'trade': 'home.html',
+            'ecosystem': 'openclaw.html',
+            'community': 'community.html'
+        };
 
-function updateWalletUI() {
-    const btn = document.getElementById('walletConnectBtn');
-    const dot = document.getElementById('walletDot');
-    const status = document.getElementById('walletStatus');
+        function a6(a) { return a.slice(0, 6) + '...' + a.slice(-4); }
+        
+        function showToast(msg, type) {
+            type = type || 'info';
+            var tEl = document.getElementById('toast');
+            tEl.textContent = msg;
+            tEl.className = 'toast ' + type;
+            tEl.style.display = 'block';
+            clearTimeout(tEl._timer);
+            tEl._timer = setTimeout(function() { tEl.style.display = 'none'; }, 3000);
+        }
 
-    if (isConnected && currentAccount) {
-        btn.classList.add('connected');
-        dot.classList.add('connected-dot');
-        status.textContent = formatAddress(currentAccount);
-    } else {
-        btn.classList.remove('connected');
-        dot.classList.remove('connected-dot');
-        status.textContent = '连接钱包';
-    }
-}
+        async function connectWallet() {
+            if (!window.ethereum) { alert('请安装 MetaMask 钱包'); return; }
+            try {
+                showToast('正在连接钱包...', 'info');
+                var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts && accounts.length > 0) {
+                    window.currentAccount = accounts[0];
+                    window.isConnected = true;
+                    if (!window.web3) { window.web3 = new Web3(window.ethereum); }
+                    updateWalletUI();
+                    showToast('钱包连接成功', 'success');
+                    document.dispatchEvent(new CustomEvent('walletConnected', { detail: { account: window.currentAccount } }));
+                }
+            } catch (e) { showToast('连接失败: ' + (e.message || '用户拒绝'), 'error'); }
+        }
 
-// ============================================================
-//  页面切换逻辑
-// ============================================================
+        function disconnectWallet() {
+            window.isConnected = false;
+            window.currentAccount = null;
+            updateWalletUI();
+            showToast('钱包已断开', 'info');
+            document.dispatchEvent(new CustomEvent('walletDisconnected'));
+        }
 
-function switchTab(tabName) {
-    // 隐藏所有页面
-    document.querySelectorAll('.page-container').forEach(el => {
-        el.classList.remove('active');
-    });
+        function toggleWallet() { if (window.isConnected) { disconnectWallet(); } else { connectWallet(); } }
 
-    // 移除所有导航激活状态
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        function updateWalletUI() {
+            var btn = document.getElementById('walletConnectBtn');
+            var dot = document.getElementById('walletDot');
+            var status = document.getElementById('walletStatus');
+            if (window.isConnected && window.currentAccount) {
+                btn.classList.add('connected');
+                dot.classList.add('connected-dot');
+                status.textContent = a6(window.currentAccount);
+            } else {
+                btn.classList.remove('connected');
+                dot.classList.remove('connected-dot');
+                status.textContent = '连接钱包';
+            }
+        }
 
-    // 显示对应页面
-    const targetPage = document.getElementById('page-' + tabName);
-    if (targetPage) {
-        targetPage.classList.add('active');
-    }
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', function(accounts) {
+                if (accounts.length > 0) {
+                    window.currentAccount = accounts[0];
+                    window.isConnected = true;
+                    updateWalletUI();
+                    document.dispatchEvent(new CustomEvent('walletConnected', { detail: { account: window.currentAccount } }));
+                } else { disconnectWallet(); }
+            });
+            window.ethereum.on('chainChanged', function() { setTimeout(function() { location.reload(); }, 1000); });
+            window.ethereum.on('disconnect', function() { disconnectWallet(); });
+        }
 
-    // 激活对应的导航项
-    const navIndex = {
-        'home': 0,
-        'predict': 1,
-        'openclaw': 2,
-        'community': 3,
-        'rewards': 4
-    };
-    if (navIndex[tabName] !== undefined) {
-        document.querySelectorAll('.nav-item')[navIndex[tabName]].classList.add('active');
-    }
-}
+        function loadPage(name) {
+            var container = document.getElementById('page-container');
+            container.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:80vh;color:#a3adc9;font-size:14px;">加载中...</div>';
+            fetch(pageMap[name])
+                .then(function(r) { return r.text(); })
+                .then(function(html) {
+                    var tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    document.querySelectorAll('style[data-dynamic]').forEach(function(el) { el.remove(); });
+                    var styles = tempDiv.querySelectorAll('style');
+                    styles.forEach(function(style) {
+                        var newStyle = document.createElement('style');
+                        newStyle.textContent = style.textContent;
+                        newStyle.setAttribute('data-dynamic', 'true');
+                        document.head.appendChild(newStyle);
+                    });
+                    styles.forEach(function(s) { s.remove(); });
+                    container.innerHTML = tempDiv.innerHTML;
+                    var scripts = container.querySelectorAll('script');
+                    scripts.forEach(function(oldScript) {
+                        var newScript = document.createElement('script');
+                        newScript.textContent = oldScript.textContent;
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                    });
+                })
+                .catch(function() { container.innerHTML = '<div style="color:#e94560;text-align:center;margin-top:40px;">加载失败</div>'; });
+        }
 
-// ============================================================
-//  Toast 通知
-// ============================================================
+        function switchTab(name) {
+            var navItems = document.querySelectorAll('#bottomNav .nav-item');
+            navItems.forEach(function(item) {
+                item.classList.remove('active');
+                if (item.getAttribute('data-tab') === name) {
+                    item.classList.add('active');
+                }
+            });
+            loadPage(name);
+        }
 
-function showToast(message, type = 'info') {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.className = 'toast ' + type;
-    toast.style.display = 'block';
-    clearTimeout(toast._hideTimer);
-    toast._hideTimer = setTimeout(() => {
-        toast.style.display = 'none';
-    }, 3000);
-}
+        document.getElementById('bottomNav').addEventListener('click', function(e) {
+            var target = e.target;
+            while (target && target !== this) {
+                if (target.classList.contains('nav-item')) {
+                    var tabName = target.getAttribute('data-tab');
+                    if (tabName) { switchTab(tabName); }
+                    return;
+                }
+                target = target.parentElement;
+            }
+        });
 
-// ============================================================
-//  初始化
-// ============================================================
+        async function autoConnect() {
+            if (window.ethereum) {
+                window.web3 = new Web3(window.ethereum);
+                try {
+                    var accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts && accounts.length > 0) {
+                        window.currentAccount = accounts[0];
+                        window.isConnected = true;
+                        updateWalletUI();
+                    }
+                } catch (e) {}
+            }
+        }
 
-// 默认显示首页
-document.addEventListener('DOMContentLoaded', function() {
-    switchTab('home');
-});
+        document.addEventListener('DOMContentLoaded', function() {
+            autoConnect().then(function() { switchTab('trade'); });
+        });
+    </script>
+</body>
+</html>
