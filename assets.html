@@ -1,17 +1,5 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>钱包资产</title>
+<div id="page-assets" class="page-container">
     <style>
-        :root {
-            --bg-color: #ffffff;
-            --text-main: #1c1c1e;
-            --text-sub: #8e8e93;
-            --color-green: #27ae60;<div id="page-assets" class="page-container">
-    <style>
-        /* ========== 原资产页毛玻璃卡片样式 ========== */
         .glass-card { 
             background: rgba(18,22,40,0.7); 
             backdrop-filter: blur(16px); 
@@ -28,173 +16,48 @@
         .stat-val { font-size: 24px; font-weight: bold; color: #4ecca3; }
         .green-text { color: #4ecca3; }
 
-        /* ========== 新增资产列表卡片样式（作用域 .wallet-assets） ========== */
-        .wallet-assets {
-            --wa-bg-card: rgba(18,22,40,0.7);
-            --wa-text-main: #EAECF0;
-            --wa-text-sub: #8E94B2;
-            --wa-color-green: #4ecca3;
-            --wa-color-red: #e94560;
-            --wa-border-color: rgba(255,255,255,0.08);
-            --wa-bg-item-even: rgba(255,255,255,0.02);
-            margin-top: -5px; /* 让卡片紧接总资产卡片 */
+        /* 钱包资产列表卡片 */
+        .wallet-assets { margin-top: -5px; }
+        .wa-header { display: flex; justify-content: space-between; align-items: center; padding: 0 0 12px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .wa-tabs { display: flex; gap: 20px; }
+        .wa-tab { font-size: 15px; color: #8E94B2; cursor: pointer; position: relative; padding-bottom: 4px; }
+        .wa-tab.active { color: #f0b90b; font-weight: 600; }
+        .wa-tab.active::after { content: ''; position: absolute; left: 0; bottom: -12px; width: 100%; height: 2px; background: #f0b90b; }
+        .wa-actions { display: flex; gap: 16px; color: #a3adc9; }
+        .wa-actions span { font-size: 18px; cursor: pointer; }
+        .wa-asset-list { display: flex; flex-direction: column; }
+        .wa-asset-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08);
+            cursor: pointer; transition: background 0.2s;
         }
-
-        .wallet-assets .wa-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 0 12px 0;
-            border-bottom: 1px solid var(--wa-border-color);
+        .wa-asset-item:active { background: rgba(255,255,255,0.03); }
+        .wa-asset-left { display: flex; align-items: center; gap: 12px; }
+        .wa-token-icon-wrapper { position: relative; width: 40px; height: 40px; }
+        .wa-token-icon {
+            width: 100%; height: 100%; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 16px; color: white;
         }
-
-        .wallet-assets .wa-tabs {
-            display: flex;
-            gap: 20px;
+        .wa-network-badge {
+            position: absolute; bottom: -2px; right: -2px;
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 2px solid rgba(18,22,40,0.7);
+            display: flex; align-items: center; justify-content: center; background: #fff;
         }
-
-        .wallet-assets .wa-tab {
-            font-size: 15px;
-            color: var(--wa-text-sub);
-            cursor: pointer;
-            position: relative;
-            padding-bottom: 4px;
-        }
-
-        .wallet-assets .wa-tab.active {
-            color: #f0b90b;
-            font-weight: 600;
-        }
-
-        .wallet-assets .wa-tab.active::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -12px;
-            width: 100%;
-            height: 2px;
-            background: #f0b90b;
-        }
-
-        .wallet-assets .wa-actions {
-            display: flex;
-            gap: 16px;
-            color: #a3adc9;
-        }
-
-        .wallet-assets .wa-actions span {
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        .wallet-assets .wa-asset-list {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .wallet-assets .wa-asset-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--wa-border-color);
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .wallet-assets .wa-asset-item:active {
-            background: rgba(255,255,255,0.03);
-        }
-
-        .wallet-assets .wa-asset-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .wallet-assets .wa-token-icon-wrapper {
-            position: relative;
-            width: 40px;
-            height: 40px;
-        }
-
-        .wallet-assets .wa-token-icon {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 16px;
-            color: white;
-        }
-
-        .wallet-assets .wa-network-badge {
-            position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 2px solid var(--wa-bg-card);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #fff;
-        }
-
-        .wallet-assets .wa-token-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .wallet-assets .wa-token-name {
-            font-size: 16px;
-            font-weight: 500;
-            color: var(--wa-text-main);
-        }
-
-        .wallet-assets .wa-token-price-wrap {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .wallet-assets .wa-token-price {
-            font-size: 14px;
-            color: var(--wa-text-sub);
-        }
-
-        .wallet-assets .wa-token-change {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .wallet-assets .wa-token-change.up { color: var(--wa-color-green); }
-        .wallet-assets .wa-token-change.down { color: var(--wa-color-red); }
-
-        .wallet-assets .wa-asset-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 2px;
-        }
-
-        .wallet-assets .wa-asset-balance {
-            font-size: 16px;
-            font-weight: 500;
-            color: var(--wa-text-main);
-        }
-
-        .wallet-assets .wa-asset-value {
-            font-size: 14px;
-            color: var(--wa-text-sub);
-        }
+        .wa-token-info { display: flex; flex-direction: column; gap: 2px; }
+        .wa-token-name { font-size: 16px; font-weight: 500; color: #EAECF0; }
+        .wa-token-price-wrap { display: flex; align-items: center; gap: 6px; }
+        .wa-token-price { font-size: 14px; color: #8E94B2; }
+        .wa-token-change { font-size: 14px; font-weight: 500; }
+        .wa-token-change.up { color: #4ecca3; }
+        .wa-token-change.down { color: #e94560; }
+        .wa-asset-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .wa-asset-balance { font-size: 16px; font-weight: 500; color: #EAECF0; }
+        .wa-asset-value { font-size: 14px; color: #8E94B2; }
     </style>
 
-    <!-- 总资产卡片（保持不变） -->
+    <!-- 总资产卡片（独立显示） -->
     <div class="glass-card">
         <div class="flex-row">
             <div>
@@ -208,7 +71,7 @@
         </div>
     </div>
 
-    <!-- 新增：钱包资产列表卡片（替换原第二、第三卡片） -->
+    <!-- 钱包资产列表卡片 -->
     <div class="glass-card wallet-assets">
         <div class="wa-header">
             <div class="wa-tabs">
@@ -220,90 +83,19 @@
                 <span>+</span>
             </div>
         </div>
-
         <div class="wa-asset-list" id="waTokenList"></div>
     </div>
 
     <script>
     (function() {
-        // 保留原总资产刷新逻辑（略，与之前相同，但你要求不变）
-        // 我们只需保留原有的总资产数据更新部分，此处不赘述，直接粘贴原脚本头部变量和 refreshAllData 函数，但为了简洁略去，实际使用时记得保留。
-        // 下面仅新增列表渲染脚本。
-
-        // 模拟资产数据（可替换为链上数据）
+        // 模拟代币数据（可替换为链上数据）
         var assets = [
-            {
-                id: 'bnb',
-                symbol: 'BNB',
-                price: 543.93,
-                change: '-0.19%',
-                balance: '0.001801',
-                value: 0.97,
-                isUp: false,
-                iconColor: '#F0B90B',
-                iconText: 'B',
-                hasBscBadge: false
-            },
-            {
-                id: 'myk',
-                symbol: 'MYK',
-                price: 0.006470,
-                change: '+8.82%',
-                balance: '142,530.508',
-                value: 922.96,
-                isUp: true,
-                iconColor: '#3f51b5',
-                iconText: 'M',
-                hasBscBadge: false
-            },
-            {
-                id: 'usdc',
-                symbol: 'USDC',
-                price: 1.00,
-                change: '-0.05%',
-                balance: '0',
-                value: 0,
-                isUp: false,
-                iconColor: '#2775ca',
-                iconText: 'USDC',
-                hasBscBadge: true
-            },
-            {
-                id: 'usdt',
-                symbol: 'USDT',
-                price: 1.0000,
-                change: '0.00%',
-                balance: '0',
-                value: 0,
-                isUp: null,
-                iconColor: '#26a17b',
-                iconText: 'USDT',
-                hasBscBadge: true
-            },
-            {
-                id: 'btcb',
-                symbol: 'BTCB',
-                price: 58728.02,
-                change: '+0.66%',
-                balance: '0',
-                value: 0,
-                isUp: true,
-                iconColor: '#f7931a',
-                iconText: '₿',
-                hasBscBadge: false
-            },
-            {
-                id: 'eth',
-                symbol: 'ETH',
-                price: 1575.12,
-                change: '+0.74%',
-                balance: '0',
-                value: 0,
-                isUp: true,
-                iconColor: '#627eea',
-                iconText: '♦',
-                hasBscBadge: true
-            }
+            { symbol: 'BNB', price: 543.93, change: '-0.19%', balance: '0.001801', value: 0.97, isUp: false, iconColor: '#F0B90B', iconText: 'B', hasBscBadge: false },
+            { symbol: 'MYK', price: 0.006470, change: '+8.82%', balance: '142,530.508', value: 922.96, isUp: true, iconColor: '#3f51b5', iconText: 'M', hasBscBadge: false },
+            { symbol: 'USDC', price: 1.00, change: '-0.05%', balance: '0', value: 0, isUp: false, iconColor: '#2775ca', iconText: 'USDC', hasBscBadge: true },
+            { symbol: 'USDT', price: 1.0000, change: '0.00%', balance: '0', value: 0, isUp: null, iconColor: '#26a17b', iconText: 'USDT', hasBscBadge: true },
+            { symbol: 'BTCB', price: 58728.02, change: '+0.66%', balance: '0', value: 0, isUp: true, iconColor: '#f7931a', iconText: '₿', hasBscBadge: false },
+            { symbol: 'ETH', price: 1575.12, change: '+0.74%', balance: '0', value: 0, isUp: true, iconColor: '#627eea', iconText: '♦', hasBscBadge: true }
         ];
 
         function formatMoney(num) {
@@ -313,6 +105,7 @@
         }
 
         function priceChangeClass(changeStr) {
+            if (!changeStr) return '';
             if (changeStr.startsWith('+')) return 'up';
             if (changeStr.startsWith('-')) return 'down';
             return '';
@@ -327,395 +120,20 @@
                 item.className = 'wa-asset-item';
 
                 var bscBadgeSvg = asset.hasBscBadge ? 
-                    '<div class="wa-network-badge">' +
-                        '<svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44">' +
-                            '<path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/>' +
-                            '<path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/>' +
-                        '</svg>' +
-                    '</div>' : '';
+                    '<div class="wa-network-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44"><path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/><path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/></svg></div>' : '';
 
-                item.innerHTML = 
+                item.innerHTML =
                     '<div class="wa-asset-left">' +
-                        '<div class="wa-token-icon-wrapper">' +
-                            '<div class="wa-token-icon" style="background-color:' + asset.iconColor + ';">' + asset.iconText + '</div>' +
-                            bscBadgeSvg +
-                        '</div>' +
-                        '<div class="wa-token-info">' +
-                            '<div class="wa-token-name">' + asset.symbol + '</div>' +
-                            '<div class="wa-token-price-wrap">' +
-                                '<span class="wa-token-price">' + formatMoney(asset.price) + '</span>' +
-                                '<span class="wa-token-change ' + priceChangeClass(asset.change) + '">' + asset.change + '</span>' +
-                            '</div>' +
-                        '</div>' +
+                        '<div class="wa-token-icon-wrapper"><div class="wa-token-icon" style="background-color:' + asset.iconColor + ';">' + asset.iconText + '</div>' + bscBadgeSvg + '</div>' +
+                        '<div class="wa-token-info"><div class="wa-token-name">' + asset.symbol + '</div><div class="wa-token-price-wrap"><span class="wa-token-price">' + formatMoney(asset.price) + '</span><span class="wa-token-change ' + priceChangeClass(asset.change) + '">' + asset.change + '</span></div></div>' +
                     '</div>' +
-                    '<div class="wa-asset-right">' +
-                        '<div class="wa-asset-balance">' + asset.balance + '</div>' +
-                        '<div class="wa-asset-value">' + formatMoney(asset.value) + '</div>' +
-                    '</div>';
+                    '<div class="wa-asset-right"><div class="wa-asset-balance">' + asset.balance + '</div><div class="wa-asset-value">' + formatMoney(asset.value) + '</div></div>';
                 container.appendChild(item);
             });
         }
 
-        // 页面加载后渲染
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', renderAssets);
-        } else {
-            renderAssets();
-        }
-
-        // 如果你希望保留原来的链上总资产刷新，可以把原有 refreshAllData 函数放在这里，并在 renderAssets 中调用真实数据。
-        // 原资产页脚本中有关 MYK/USDT 余额获取的函数建议保留，因为总资产卡片需要它们。
-        // 为简洁，此处略去，实际合并时请将原脚本的余额查询部分加回。
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderAssets);
+        else renderAssets();
     })();
     </script>
 </div>
-            --color-red: #eb5757;
-            --border-color: #f0f0f0;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        
-        body {
-            background-color: #f7f7f8;
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .app-container {
-            width: 100%;
-            max-width: 480px; /* 适配手机端宽度 */
-            background-color: var(--bg-color);
-            min-height: 100vh;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
-        }
-
-        /* 顶部导航栏 */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .header-title {
-            font-size: 18px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-        }
-        .header-title::after {
-            content: '▼';
-            font-size: 10px;
-            color: var(--text-sub);
-        }
-
-        .tab-item {
-            color: var(--text-sub);
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .tab-item.active {
-            color: var(--text-main);
-            font-weight: 600;
-            position: relative;
-        }
-        .tab-item.active::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -18px;
-            width: 100%;
-            height: 2px;
-            background-color: var(--text-main);
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .icon-btn {
-            font-size: 20px;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .badge {
-            position: absolute;
-            top: -6px;
-            right: -8px;
-            background-color: var(--color-red);
-            color: #fff;
-            font-size: 10px;
-            padding: 2px 4px;
-            border-radius: 10px;
-            line-height: 1;
-            font-weight: 500;
-        }
-
-        /* 资产列表 */
-        .asset-list {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .asset-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border-color);
-            cursor: pointer;
-        }
-        .asset-item:active {
-            background-color: #fafafa;
-        }
-
-        /* 左侧（图标 + 名字 + 价格） */
-        .asset-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .token-icon-wrapper {
-            position: relative;
-            width: 40px;
-            height: 40px;
-        }
-
-        .token-icon {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 16px;
-            color: white;
-        }
-
-        /* 网络标签角标 */
-        .network-badge {
-            position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #fff;
-        }
-
-        .token-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .token-name {
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .token-price-wrap {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .token-price {
-            font-size: 14px;
-            color: var(--text-sub);
-        }
-
-        .token-change {
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .token-change.up { color: var(--color-green); }
-        .token-change.down { color: var(--color-red); }
-
-        /* 右侧（余额 + 总值） */
-        .asset-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 2px;
-        }
-
-        .asset-balance {
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .asset-value {
-            font-size: 14px;
-            color: var(--text-sub);
-        }
-
-        /* 兼容 PC 大屏时的柔和效果 */
-        @media (min-width: 481px) {
-            .app-container {
-                border-radius: 12px;
-                margin-top: 20px;
-                overflow: hidden;
-                max-height: 90vh;
-                overflow-y: auto;
-                border: 1px solid #e0e0e0;
-            }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="app-container">
-        <!-- 顶部导航 -->
-        <div class="header">
-            <div class="header-left">
-                <span class="header-title">资产</span>
-                <span class="tab-item active">DeFi</span>
-                <span class="tab-item">NFT</span>
-            </div>
-            <div class="header-right">
-                <span class="icon-btn">🔍</span>
-                <span class="icon-btn">+<span class="badge">64</span></span>
-            </div>
-        </div>
-
-        <!-- 列表容器 (JS 动态渲染) -->
-        <div class="asset-list" id="tokenList"></div>
-    </div>
-
-    <script>
-        // ================= 1. 精选代币数据 (已移除原版 MYK 和 USDC) =================
-        // 为保持数据结构的兼容性，您后续可以通过 web3.js / ethers.js 替换这里的数据
-        const assets = [
-            {
-                id: 'bnb',
-                symbol: 'BNB',
-                price: 543.93,
-                change: '-0.19%',
-                balance: '0.001801',
-                value: 0.97,
-                isUp: false,
-                iconColor: '#F0B90B', // BNB 金
-                iconText: 'B',
-                hasBscBadge: false
-            },
-            {
-                id: 'usdt',
-                symbol: 'USDT',
-                price: 1.0000,
-                change: '0.00%',
-                balance: '0',
-                value: 0,
-                isUp: null,
-                iconColor: '#26a17b', // USDT 绿
-                iconText: 'USDT',
-                hasBscBadge: true
-            },
-            {
-                id: 'btcb',
-                symbol: 'BTCB',
-                price: 58728.02,
-                change: '+0.66%',
-                balance: '0',
-                value: 0,
-                isUp: true,
-                iconColor: '#f7931a', // BTC 橙
-                iconText: '₿',
-                hasBscBadge: false
-            },
-            {
-                id: 'eth',
-                symbol: 'ETH',
-                price: 1575.12,
-                change: '+0.74%',
-                balance: '0',
-                value: 0,
-                isUp: true,
-                iconColor: '#627eea', // ETH 灰蓝
-                iconText: '♦',
-                hasBscBadge: true
-            }
-        ];
-
-        // ================= 2. 处理数字格式化 =================
-        function formatMoney(num) {
-            if (num === 0) return '$0';
-            if (num < 0.01) return `$${num.toFixed(4)}`;
-            return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
-
-        function priceChangeClass(changeStr) {
-            if (changeStr.startsWith('+')) return 'up';
-            if (changeStr.startsWith('-')) return 'down';
-            return '';
-        }
-
-        // ================= 3. 渲染列表 =================
-        const listContainer = document.getElementById('tokenList');
-
-        function renderAssets() {
-            listContainer.innerHTML = '';
-            assets.forEach(asset => {
-                const item = document.createElement('div');
-                item.className = 'asset-item';
-
-                // 构建 BSC 角标 SVG
-                const bscBadgeSvg = asset.hasBscBadge ? `
-                    <div class="network-badge">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44">
-                            <path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/>
-                            <path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/>
-                        </svg>
-                    </div>
-                ` : '';
-
-                item.innerHTML = `
-                    <div class="asset-left">
-                        <div class="token-icon-wrapper">
-                            <div class="token-icon" style="background-color: ${asset.iconColor};">
-                                ${asset.iconText}
-                            </div>
-                            ${bscBadgeSvg}
-                        </div>
-                        <div class="token-info">
-                            <div class="token-name">${asset.symbol}</div>
-                            <div class="token-price-wrap">
-                                <span class="token-price">${formatMoney(asset.price)}</span>
-                                <span class="token-change ${priceChangeClass(asset.change)}">${asset.change}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="asset-right">
-                        <div class="asset-balance">${asset.balance}</div>
-                        <div class="asset-value">${formatMoney(asset.value)}</div>
-                    </div>
-                `;
-                listContainer.appendChild(item);
-            });
-        }
-
-        // 初始化渲染
-        renderAssets();
-    </script>
-</body>
-</html>
