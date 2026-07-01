@@ -202,26 +202,19 @@
             var userAddress = window.currentAccount;
             if (!web3 || !userAddress) return;
             try {
-                // 最近 PancakeSwap 买入
                 try {
                     var buyAmt = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('lastPancakeBuyAmount(address)', ['address'], [userAddress]) })));
                     var buyVal = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('lastPancakeBuyValue(address)', ['address'], [userAddress]) })));
                     var rb = $('recentBuy'); if (rb) rb.textContent = buyVal > 0 ? '+' + buyAmt.toFixed(2) + ' ($' + buyVal.toFixed(2) + ')' : '暂无';
                 } catch (e) { var rb2 = $('recentBuy'); if (rb2) rb2.textContent = '--'; }
-
-                // 持币奖励
                 try {
                     var claimed = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('totalDailyRewardClaimed(address)', ['address'], [userAddress]) })));
                     var rhr = $('recentHoldingReward'); if (rhr) rhr.textContent = claimed.toFixed(4);
                 } catch (e) { var rhr2 = $('recentHoldingReward'); if (rhr2) rhr2.textContent = '--'; }
-
-                // 升级奖励
                 try {
                     var bonusInfo = web3.eth.abi.decodeParameters(['uint256','uint256','uint256','uint256','bool','uint256'], await web3.eth.call({ to: RP, data: encodeCall('getDailyBonusInfo(address)', ['address'], [userAddress]) }));
                     var rbr = $('recentBonusReward'); if (rbr) rbr.textContent = n(bonusInfo[3]).toFixed(4);
                 } catch (e) { var rbr2 = $('recentBonusReward'); if (rbr2) rbr2.textContent = '--'; }
-
-                // 赠送MYP = 用户 MYP 余额
                 try {
                     var mypBal = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: MYP, data: encodeCall('balanceOf(address)', ['address'], [userAddress]) })));
                     var rmr = $('recentMYPReward'); if (rmr) rmr.textContent = mypBal.toFixed(4) + ' MYP';
