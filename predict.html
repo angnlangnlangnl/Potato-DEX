@@ -1,6 +1,5 @@
 <div id="page-markets" class="page-container">
     <style>
-        /* ================= 行情页变量与重置 ================= */
         .market-page {
             --m-bg-primary: #0F111D;
             --m-bg-card: #1A1D2E;
@@ -18,8 +17,6 @@
             color: var(--m-text-white);
             -webkit-font-smoothing: antialiased;
         }
-
-        /* ================= 顶部搜索 ================= */
         .market-page .m-header { padding: 12px 0; }
         .market-page .m-search-bar {
             display: flex; align-items: center; background: var(--m-bg-search);
@@ -32,19 +29,6 @@
         .market-page .m-search-bar input::placeholder { color: var(--m-text-grey); }
         .market-page .m-search-bar .m-icon { color: var(--m-text-grey); font-size: 18px; margin: 0 4px; }
 
-        /* ================= 导航与标签 ================= */
-        .market-page .m-nav-main { display: flex; padding: 8px 0; gap: 20px; overflow-x: auto; scrollbar-width: none; }
-        .market-page .m-nav-main::-webkit-scrollbar { display: none; }
-        .market-page .m-nav-item { font-size: 16px; white-space: nowrap; color: var(--m-text-grey); cursor: pointer; }
-        .market-page .m-nav-item.active { color: var(--m-text-white); font-weight: 700; }
-
-        .market-page .m-tags-row { display: flex; align-items: center; padding: 8px 0; gap: 16px; }
-        .market-page .m-tags-scroll { display: flex; flex: 1; gap: 16px; overflow-x: auto; scrollbar-width: none; }
-        .market-page .m-tags-scroll::-webkit-scrollbar { display: none; }
-        .market-page .m-tag-item { font-size: 14px; white-space: nowrap; color: var(--m-text-light-grey); cursor: pointer; }
-        .market-page .m-tag-item.active { color: var(--m-text-white); }
-
-        /* ================= 列表表头 ================= */
         .market-page .m-table-header {
             display: flex; padding: 8px 0; font-size: 12px; color: var(--m-text-light-grey);
             border-bottom: 0.5px solid var(--m-divider);
@@ -53,7 +37,6 @@
         .market-page .m-col-price { flex: 3; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
         .market-page .m-col-change { flex: 2; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
 
-        /* ================= 币种列表 ================= */
         .market-page .m-coin-list { padding: 0; }
         .market-page .m-coin-item {
             display: flex; padding: 14px 0; border-bottom: 0.5px solid var(--m-divider);
@@ -84,7 +67,6 @@
     </style>
 
     <div class="market-page">
-        <!-- 顶部区域 -->
         <div class="m-header">
             <div class="m-search-bar">
                 <span class="m-icon">🔍</span>
@@ -92,31 +74,13 @@
                 <span class="m-icon">⋯</span>
             </div>
         </div>
-        <div class="m-nav-main">
-            <span class="m-nav-item active">自选</span>
-            <span class="m-nav-item">市场</span>
-            <span class="m-nav-item">Alpha</span>
-            <span class="m-nav-item">金融增长</span>
-            <span class="m-nav-item">大数据</span>
-        </div>
-        <div class="m-tags-row">
-            <div class="m-tags-scroll">
-                <span class="m-tag-item active">全部</span>
-                <span class="m-tag-item">现货</span>
-                <span class="m-tag-item">Alpha</span>
-                <span class="m-tag-item">合约</span>
-                <span class="m-tag-item">期权</span>
-            </div>
-        </div>
 
-        <!-- 表头 -->
         <div class="m-table-header">
             <div class="m-col-name">名称 ⇅ 成交额</div>
             <div class="m-col-price">最新价格 ⇅</div>
             <div class="m-col-change">24h涨跌 ⇅</div>
         </div>
 
-        <!-- 数据列表容器 -->
         <div class="m-coin-list" id="mCoinList">
             <div style="text-align: center; padding: 40px; color: var(--m-text-light-grey);">正在加载 BSC 实时行情数据...</div>
         </div>
@@ -226,10 +190,8 @@
             }
         }
 
-        // 监听页面切换，清理定时器
         document.addEventListener('walletDisconnected', stopRefresh);
-        
-        // 启动
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', startRefresh);
         } else {
