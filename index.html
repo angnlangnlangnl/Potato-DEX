@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MYK DApp</title>
+    <title>Potato DEX</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
         body {
@@ -67,7 +67,7 @@
     <div class="mobile-container">
         <header>
             <div class="logo-area" onclick="switchTab('trade')">
-                <div class="logo-icon"></div>MYK
+                <div class="logo-icon"></div>Potato DEX
             </div>
             <button id="walletConnectBtn" class="wallet-btn" onclick="toggleWallet()">
                 <span id="walletDot" class="wallet-dot"></span>
@@ -203,7 +203,6 @@
         }
 
         function switchTab(name) {
-            // 更新底部导航激活状态
             var navItems = document.querySelectorAll('#bottomNav .nav-item');
             navItems.forEach(function(item) {
                 item.classList.remove('active');
@@ -211,20 +210,15 @@
                     item.classList.add('active');
                 }
             });
-            // 加载页面
             loadPage(name);
         }
 
-        // ===== 使用事件委托绑定底部导航 =====
         document.getElementById('bottomNav').addEventListener('click', function(e) {
             var target = e.target;
-            // 向上查找 .nav-item
             while (target && target !== this) {
                 if (target.classList.contains('nav-item')) {
                     var tabName = target.getAttribute('data-tab');
-                    if (tabName) {
-                        switchTab(tabName);
-                    }
+                    if (tabName) { switchTab(tabName); }
                     return;
                 }
                 target = target.parentElement;
