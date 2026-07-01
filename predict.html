@@ -54,7 +54,7 @@
         }
     </style>
 
-    <!-- 绑定合约奖励卡片（排序第一） -->
+    <!-- 绑定合约奖励卡片 -->
     <div class="glass-card">
         <h2 style="font-size: 1.2rem; color: #f0b90b; margin-bottom: 12px;">🔒 绑定合约奖励</h2>
         <div class="desc">激活锁仓 <span class="highlight">1000 MYK</span> · 锁仓 <span class="highlight-green">7天</span></div>
@@ -108,7 +108,7 @@
 
     _waitForWeb3(function() {
         var MYK = '0xc23CfEeC6D188D627C85106f682D9eb38d94192a';
-        var RP = '0xf7C62F0902a0D18897D69d5f5a6ee5AB668614e5';
+        var RP = '0x4cc05Ad2a6B3A75bb8e1E86f89fC1aECFf57E85a';
         var GOV = '0x937E4bF22CfCBCF770464dd48B82D1721ECbB7f4';
         var USDT = '0x55d398326f99059fF775485246999027B3197955';
         var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
@@ -181,7 +181,6 @@
             return cachedSpotPrice;
         }
 
-        // ===== 绑定合约奖励 =====
         async function fetchLockInfo() {
             var ua = getAccount();
             if (!ua) {
@@ -233,7 +232,6 @@
             } finally { b.disabled = false; unlock(); }
         }
 
-        // ===== 做市7天 =====
         async function fetchHoldingInfo() {
             var ua = getAccount();
             if (!ua) { st('holdingBalance','--'); st('holdingAmount','--'); st('streakDays','--'); st('claimedToday','--'); st('todayReward','--'); sd('claimRewardBtn',true); st('claimRewardBtn','请先连接钱包'); return; }
@@ -271,7 +269,6 @@
             finally { b.disabled = false; if (b.textContent.indexOf('已领取')===-1) b.textContent='领取奖励'; unlock(); }
         }
 
-        // ===== 每日升级奖励 =====
         async function fetchBonus() {
             var ua = getAccount();
             if (!ua) { st('bonusEstimate','--'); st('bonusPrincipal','0.00 USDT'); st('bonusDaily','0.000000 MYK'); st('bonusClaimed','0.000000 MYK'); st('bonusRemaining','--'); sd('claimBonusBtn',true); st('claimBonusBtn','📈 暂无升级奖励'); return; }
