@@ -55,7 +55,7 @@
         .wa-asset-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
         .wa-asset-balance { font-size: 16px; font-weight: 500; color: #EAECF0; }
         .wa-asset-value { font-size: 14px; color: #8E94B2; }
-        .loading-text { text-align: center; padding: 30px; color: #a3adc9; }
+        .placeholder-text { text-align: center; padding: 30px; color: #a3adc9; }
     </style>
 
     <!-- 总资产卡片（独立显示） -->
@@ -80,14 +80,11 @@
                 <span>+</span>
             </div>
         </div>
-        <div class="wa-asset-list" id="waTokenList">
-            <div class="loading-text">正在读取链上资产...</div>
-        </div>
+        <div class="wa-asset-list" id="waTokenList"></div>
     </div>
 
     <script>
     (function() {
-        // 常用 BSC 代币列表 (合约地址)
         var TOKENS = [
             { symbol: 'BNB', address: null, decimals: 18, iconColor: '#F0B90B', iconText: 'B', isNative: true },
             { symbol: 'USDT', address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18, iconColor: '#26a17b', iconText: 'USDT', isNative: false },
@@ -100,10 +97,8 @@
             { symbol: 'BTCB', address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', decimals: 18, iconColor: '#f7931a', iconText: '₿', isNative: false }
         ];
 
-        // 价格缓存
         var priceCache = {};
 
-        // 格式化金额
         function formatBalance(num, decimals) {
             if (num === 0) return '0';
             if (num < 0.001) return num.toFixed(6);
@@ -137,7 +132,6 @@
 
         async function fetchPrices() {
             try {
-                // 使用 Binance API 获取 USDT 交易对价格
                 var symbols = ['BNBUSDT', 'USDTUSDT', 'USDCUSDT', 'BUSDUSDT', 'CAKEUSDT', 'ETHUSDT', 'BTCBUSDT'];
                 var responses = await Promise.all(symbols.map(s => 
                     fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + s).then(r => r.json())
@@ -147,9 +141,8 @@
                         priceCache[item.symbol.replace('USDT', '')] = parseFloat(item.price);
                     }
                 });
-                // 额外价格
                 priceCache['WBNB'] = priceCache['BNB'];
-                priceCache['MYK'] = 0.00647; // 暂时用估算值，你也可以用 PancakeSwap 实时查
+                priceCache['MYK'] = 0.00647; // 可替换为PancakeSwap实时价格
             } catch (e) {
                 console.error('价格获取失败', e);
                 // 回退价格
@@ -169,12 +162,12 @@
             if (!container) return;
             
             if (!window.web3 || !window.currentAccount) {
-                container.innerHTML = '<div class="loading-text">请先连接钱包</div>';
+                container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
                 document.getElementById('totalAssetValue').textContent = '$--';
                 return;
             }
 
-            container.innerHTML = '<div class="loading-text">正在读取链上资产...</div>';
+            // 后台无感知加载：不显示任何加载提示，直接获取数据后更新DOM
             await fetchPrices();
             
             var totalValue = 0;
@@ -187,9 +180,8 @@
                 var value = balance * price;
                 totalValue += value;
 
-                if (balance === 0 && token.symbol !== 'BNB') continue; // 只显示有余额的代币，但 BNB 即使为0也显示
+                if (balance === 0 && token.symbol !== 'BNB') continue;
 
-                var changeHtml = ''; // 可以留空或从 API 获取24h变化
                 var bscBadge = (token.symbol === 'USDT' || token.symbol === 'USDC' || token.symbol === 'BUSD') ? 
                     '<div class="wa-network-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44"><path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/><path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/></svg></div>' : '';
 
@@ -214,7 +206,7 @@
                     '</div>';
             }
 
-            container.innerHTML = assetsHtml || '<div class="loading-text">暂无资产</div>';
+            container.innerHTML = assetsHtml || '<div class="placeholder-text">暂无资产</div>';
             document.getElementById('totalAssetValue').textContent = formatUSD(totalValue);
         }
 
@@ -225,18 +217,18 @@
         document.addEventListener('walletDisconnected', function() {
             document.getElementById('totalAssetValue').textContent = '$--';
             var container = document.getElementById('waTokenList');
-            if (container) container.innerHTML = '<div class="loading-text">请先连接钱包</div>';
+            if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
         });
 
-        // 初始加载
+        // 初始状态：如果已连接则直接刷新，否则显示等待连接（但不显示加载中）
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
-                // 等待 web3 可能晚于页面加载
                 setTimeout(function() {
                     if (window.web3 && window.currentAccount) {
                         refreshAssets();
                     } else {
-                        // 显示等待连接
+                        var container = document.getElementById('waTokenList');
+                        if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
                     }
                 }, 500);
             });
@@ -244,11 +236,14 @@
             setTimeout(function() {
                 if (window.web3 && window.currentAccount) {
                     refreshAssets();
+                } else {
+                    var container = document.getElementById('waTokenList');
+                    if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
                 }
             }, 500);
         }
 
-        // 每30秒刷新一次余额
+        // 每30秒静默刷新一次
         setInterval(function() {
             if (window.currentAccount) {
                 refreshAssets();
