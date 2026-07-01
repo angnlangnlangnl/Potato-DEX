@@ -1,0 +1,348 @@
+<div id="page-markets" class="page-container">
+    <style>
+        .glass-card { 
+            background: rgba(18,22,40,0.7); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 16px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            color: #ccd6f0; 
+        }
+        .desc { color: #a3adc9; font-size: 14px; margin-bottom: 8px; }
+        .highlight { color: #4ef0a8; font-weight: 700; }
+        .highlight-green { color: #4ecca3; font-weight: 700; }
+        .stat-row {
+            display: flex; justify-content: space-between;
+            font-size: 13px; color: #ccd6f0; margin: 4px 0;
+        }
+        .stat-value { color: #4ef0a8; font-weight: 700; }
+        .btn {
+            background: linear-gradient(135deg, #e94560, #b92b4a);
+            border: none; color: white; font-weight: 700;
+            padding: 14px 18px; border-radius: 18px; cursor: pointer;
+            transition: 0.2s; box-shadow: 0 8px 18px rgba(233,69,96,0.3);
+            width: 100%; font-size: 15px; margin-top: 12px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.6; box-shadow: none; transform: none; }
+        .btn-green {
+            background: linear-gradient(135deg, #4ecca3, #2e8b6a);
+            box-shadow: 0 8px 18px rgba(78,204,163,0.3);
+        }
+        .btn-gold {
+            background: linear-gradient(135deg, #f0b90b, #e8a000);
+            box-shadow: 0 8px 18px rgba(240,185,11,0.3);
+        }
+        .info-box {
+            background: #0a0d16; border-radius: 14px; padding: 12px;
+            margin-top: 12px; font-size: 14px; border-left: 4px solid #e94560;
+            word-break: break-word; color: #ccd6f0;
+        }
+        .reward-rule-text {
+            font-size: 10px; color: #666; margin-top: 8px;
+            text-align: center; line-height: 1.5;
+        }
+        .progress-bar-container {
+            width: 100%; height: 20px; background: #1a1f35;
+            border-radius: 10px; margin: 8px 0; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; border-radius: 10px; transition: width 0.3s;
+            background: linear-gradient(90deg, #4ecca3, #f0b90b);
+        }
+    </style>
+
+    <!-- 绑定合约奖励卡片（排序第一） -->
+    <div class="glass-card">
+        <h2 style="font-size: 1.2rem; color: #f0b90b; margin-bottom: 12px;">🔒 绑定合约奖励</h2>
+        <div class="desc">激活锁仓 <span class="highlight">1000 MYK</span> · 锁仓 <span class="highlight-green">7天</span></div>
+        <div class="stat-row"><span>总领数量：<span class="stat-value" id="lockTotalAmount">1000.0000 MYK</span></span><span>总天数：<span class="stat-value" id="lockTotalDays">7 天</span></span></div>
+        <div class="stat-row" style="margin-top:8px;">
+            <span>当前可领：<span class="stat-value" id="lockReleasable">--</span></span>
+            <span>累计领取：<span class="stat-value" id="lockClaimed">--</span></span>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="lockProgress" style="width:0%;"></div>
+        </div>
+        <button class="btn btn-green" id="claimLockedBtn">🔓 提取已释放MYK</button>
+        <div class="reward-rule-text">每日线性释放 · 7天全部释放 · 可随时提取已释放部分</div>
+        <div class="info-box" id="claimLockedResult" style="display:none;"></div>
+    </div>
+
+    <!-- 做市7天 -->
+    <div class="glass-card">
+        <h2 style="font-size: 1.2rem; color: #f0b90b; margin-bottom: 12px;">🏆 做市7天·天天都赚</h2>
+        <div class="desc">持币就赚，<span class="highlight">币增长更赚</span></div>
+        <div class="stat-row"><span>连续已领：<span class="stat-value" id="streakDays">--</span> 天</span></div>
+        <div class="stat-row" style="margin-top:8px;">
+            <span>最近购买：<span class="stat-value" id="holdingBalance">--</span><span style="color:#888;font-size:10px;" id="holdingDaysAgo"></span></span>
+            <span>持币：<span class="stat-value" id="holdingAmount">--</span></span>
+        </div>
+        <div class="stat-row" style="margin-top:8px;">
+            <span>当前可领：<span class="stat-value" id="todayReward">--</span></span>
+            <span>已领币：<span class="stat-value" id="claimedToday">--</span></span>
+        </div>
+        <button class="btn btn-green" id="claimRewardBtn">领取奖励</button>
+        <div class="reward-rule-text">每天0点结算 · 可累计领取 · 订单上限50U · 卖出重置 · 跳过可补领</div>
+        <div class="info-box" id="claimRewardResult" style="display:none;"></div>
+    </div>
+
+    <!-- 每日升级奖励 -->
+    <div class="glass-card">
+        <h2 style="font-size: 1.2rem; color: #f0b90b; margin-bottom: 12px;">📈 每日升级奖励</h2>
+        <div class="desc">当前预估领取 ≈ <span class="highlight" id="bonusEstimate">--</span> MYK</div>
+        <div class="stat-row"><span>国库贡献：<span class="stat-value" id="bonusPrincipal">--</span></span><span>当日可得：<span class="stat-value" id="bonusDaily">--</span></span></div>
+        <div class="stat-row" style="margin-top:8px;"><span>已领取：<span class="stat-value" id="bonusClaimed">--</span></span><span>剩余：<span class="stat-value" id="bonusRemaining">--</span></span></div>
+        <button class="btn btn-gold" id="claimBonusBtn">📈 领取今日升级奖励</button>
+        <div class="info-box" id="claimBonusResult" style="display:none;"></div>
+    </div>
+
+    <script>
+    var _pollCount = 0;
+    function _waitForWeb3(cb) {
+        if (typeof web3 !== 'undefined' && web3 && web3.eth) { cb(); }
+        else if (_pollCount < 60) { _pollCount++; setTimeout(function() { _waitForWeb3(cb); }, 500); }
+    }
+
+    _waitForWeb3(function() {
+        var MYK = '0xc23CfEeC6D188D627C85106f682D9eb38d94192a';
+        var RP = '0xf7C62F0902a0D18897D69d5f5a6ee5AB668614e5';
+        var GOV = '0x937E4bF22CfCBCF770464dd48B82D1721ECbB7f4';
+        var USDT = '0x55d398326f99059fF775485246999027B3197955';
+        var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+        var PAIR = '0xCa4F4a81ed8a5f953f0Ea07d7Ee4e65969a33156';
+        var LOCK_MYK_AMOUNT = 1000;
+        var LOCK_DAYS = 7;
+
+        var isProcessing = false, cachedSpotPrice = 0;
+
+        function $(id) { return document.getElementById(id); }
+        function n(w) { return parseFloat(Web3.utils.fromWei(w + '', 'ether')); }
+        function st(id, t) { var e = $(id); if (e) e.textContent = t; }
+        function sd(id, v) { var e = $(id); if (e) e.disabled = v; }
+
+        function encodeCall(sig, types, values) {
+            var s = web3.eth.abi.encodeFunctionSignature(sig);
+            if (!types || !types.length) return s;
+            var e = web3.eth.abi.encodeParameters(types, values);
+            var sClean = s.replace(/^0x/, '');
+            var eClean = e.replace(/^0x/, '');
+            return '0x' + sClean + eClean;
+        }
+
+        function parseError(e) {
+            var m = (e && e.message) || '';
+            var mc = m.match(/execution reverted:\s*(.+?)(?:"|$)/);
+            if (mc) return mc[1].trim();
+            var m2 = m.match(/reason="([^"]+)"/);
+            if (m2) return m2[1];
+            return m.slice(0, 200);
+        }
+
+        function lock() { if (isProcessing) { alert('请等待当前操作完成'); return false; } isProcessing = true; return true; }
+        function unlock() { isProcessing = false; }
+
+        async function waitForTx(h) {
+            for (var i = 0; i < 30; i++) {
+                try { var r = await web3.eth.getTransactionReceipt(h); if (r) return r.status ? r : (function() { throw new Error('交易失败'); })(); }
+                catch (e) { if (i === 29) throw e; }
+                await new Promise(function(r) { setTimeout(r, 2000); });
+            }
+            throw new Error('超时');
+        }
+
+        function getAccount() { return window.currentAccount || null; }
+
+        async function fetchSpotPrice() {
+            if (!web3) return 0;
+            try {
+                try { cachedSpotPrice = n(await web3.eth.call({ to: RP, data: encodeCall('getCurrentPrice()') })); }
+                catch (e1) {
+                    try {
+                        var ra = [{"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}];
+                        cachedSpotPrice = n((await new web3.eth.Contract(ra, ROUTER).methods.getAmountsOut(Web3.utils.toWei('1','ether'), [MYK, USDT]).call())[1]);
+                    } catch (e2) {
+                        try {
+                            var pa = [{"constant":true,"inputs":[],"name":"getReserves","outputs":[{"internalType":"uint112","name":"_reserve0","type":"uint112"},{"internalType":"uint112","name":"_reserve1","type":"uint112"},{"internalType":"uint32","name":"_blockTimestampLast","type":"uint32"}],"type":"function"},{"constant":true,"inputs":[],"name":"token0","outputs":[{"internalType":"address","name":"","type":"address"}],"type":"function"}];
+                            var pc = new web3.eth.Contract(pa, PAIR);
+                            var t0 = await pc.methods.token0().call();
+                            var rv = await pc.methods.getReserves().call();
+                            var r0 = BigInt(rv[0]), r1 = BigInt(rv[1]);
+                            if (r0 === BigInt(0) || r1 === BigInt(0)) throw new Error('0');
+                            var rU = t0.toLowerCase() === USDT.toLowerCase() ? r0 : r1;
+                            var rM = t0.toLowerCase() === USDT.toLowerCase() ? r1 : r0;
+                            cachedSpotPrice = parseFloat(Web3.utils.fromWei(((rU * BigInt(10 ** 18)) / rM).toString(), 'ether'));
+                        } catch (e3) {}
+                    }
+                }
+            } catch (e) {}
+            return cachedSpotPrice;
+        }
+
+        // ===== 绑定合约奖励 =====
+        async function fetchLockInfo() {
+            var ua = getAccount();
+            if (!ua) {
+                st('lockReleasable', '--'); st('lockClaimed', '--');
+                st('lockTotalAmount', '1000.0000 MYK'); st('lockTotalDays', '7 天');
+                var lp = $('lockProgress'); if (lp) lp.style.width = '0%';
+                sd('claimLockedBtn', true); st('claimLockedBtn', '🔓 提取已释放MYK');
+                return;
+            }
+            try {
+                var releasable = 0;
+                try { releasable = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('getReleasable(address)', ['address'], [ua]) }))); } catch (e) {}
+                st('lockReleasable', releasable.toFixed(4) + ' MYK');
+
+                var claimed = 0;
+                try {
+                    var raw = web3.eth.abi.decodeParameters(
+                        ['uint256','uint256','uint256'],
+                        await web3.eth.call({ to: RP, data: encodeCall('lockInfo(address)', ['address'], [ua]) })
+                    );
+                    claimed = n(raw[2]);
+                } catch (e) {}
+                st('lockClaimed', claimed.toFixed(4) + ' MYK');
+
+                st('lockTotalAmount', LOCK_MYK_AMOUNT.toFixed(4) + ' MYK');
+                st('lockTotalDays', LOCK_DAYS + ' 天');
+
+                var progress = Math.min(100, (claimed / LOCK_MYK_AMOUNT) * 100);
+                var lp2 = $('lockProgress'); if (lp2) lp2.style.width = progress.toFixed(1) + '%';
+
+                sd('claimLockedBtn', releasable <= 0);
+                st('claimLockedBtn', releasable > 0 ? '🔓 提取 ' + releasable.toFixed(4) + ' MYK' : '暂无可提取MYK');
+            } catch (e) {
+                st('lockReleasable', '--'); st('lockClaimed', '--');
+            }
+        }
+
+        async function claimLocked() {
+            var ua = getAccount(); if (!ua) { alert('请先连接钱包'); return; } if (!lock()) return;
+            var b = $('claimLockedBtn'), el = $('claimLockedResult'); if (!b || !el) return;
+            el.style.display = 'block'; el.innerHTML = '⏳ 提取中...'; b.disabled = true; b.textContent = '处理中...';
+            try {
+                await waitForTx(await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: RP, data: encodeCall('claimLocked()'), gas: '0xF4240' }] }));
+                el.innerHTML = '✅ 提取成功！'; el.style.borderLeftColor = '#4ecca3'; el.style.background = 'rgba(78,204,163,0.1)';
+                setTimeout(function() { fetchAll(); }, 3000);
+            } catch (e) {
+                var m = parseError(e);
+                el.innerHTML = (m.indexOf('rejected') !== -1) ? '⚠️ 已取消' : '❌ ' + m;
+            } finally { b.disabled = false; unlock(); }
+        }
+
+        // ===== 做市7天 =====
+        async function fetchHoldingInfo() {
+            var ua = getAccount();
+            if (!ua) { st('holdingBalance','--'); st('holdingAmount','--'); st('streakDays','--'); st('claimedToday','--'); st('todayReward','--'); sd('claimRewardBtn',true); st('claimRewardBtn','请先连接钱包'); return; }
+            var isActive = false, buyTs = 0, buyVal = 0, buyAmt = 0, streak = 0, claimed = 0, totalClaimable = 0;
+            try {
+                try { isActive = web3.eth.abi.decodeParameter('bool', await web3.eth.call({ to: RP, data: encodeCall('isActiveUser(address)', ['address'], [ua]) })); } catch (e) {}
+                try { buyAmt = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('lastPancakeBuyAmount(address)', ['address'], [ua]) }))); } catch (e) {}
+                try { buyVal = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('lastPancakeBuyValue(address)', ['address'], [ua]) }))); } catch (e) {}
+                try { buyTs = parseInt(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('lastPancakeBuyTime(address)', ['address'], [ua]) }))); } catch (e) {}
+                st('holdingBalance', buyVal.toFixed(2) + ' USDT'); st('holdingAmount', buyAmt.toFixed(2) + ' MYK');
+                try { streak = parseInt(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('getStreakLength(address)', ['address'], [ua]) }))); st('streakDays', streak); } catch (e) { st('streakDays','0'); }
+                try { claimed = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('totalDailyRewardClaimed(address)', ['address'], [ua]) }))); st('claimedToday', claimed.toFixed(4) + ' MYK'); } catch (e) { st('claimedToday','0.0000 MYK'); }
+                var w = 0, a = 0;
+                try { w = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('getClaimableDailyReward(address)', ['address'], [ua]) }))); } catch (e) {}
+                try { a = n(web3.eth.abi.decodeParameter('uint256', await web3.eth.call({ to: RP, data: encodeCall('getClaimableAccumulatedReward(address)', ['address'], [ua]) }))); } catch (e) {}
+                totalClaimable = w + a; st('todayReward', totalClaimable.toFixed(6) + ' MYK');
+                if (buyTs > 0) { var diff = Math.floor(Date.now()/1000)-buyTs, dd = Math.floor(diff/86400); st('holdingDaysAgo', dd<=0?(Math.floor(diff/3600)<=0?(Math.floor(diff/60)<=1?'(刚刚)':'('+Math.floor(diff/60)+'分钟前)'):'('+Math.floor(diff/3600)+'小时前)'):'('+dd+'天前)'); } else { st('holdingDaysAgo',''); }
+                var em='',bd=false;
+                if(!isActive){em='请先激活 PRIMARY 身份';bd=true;}
+                else if(totalClaimable<=0){em='今日已领取';bd=true;}
+                sd('claimRewardBtn',bd);st('claimRewardBtn',bd?em:'领取奖励');
+            } catch(e){st('holdingBalance','0.00 USDT');st('holdingAmount','0.00 MYK');st('streakDays','--');st('claimedToday','--');st('todayReward','--');sd('claimRewardBtn',true);st('claimRewardBtn','加载失败');}
+        }
+
+        async function claimDailyReward() {
+            var ua = getAccount(); if (!ua) { alert('请先连接钱包'); return; } if (!lock()) return;
+            var b = $('claimRewardBtn'), el = $('claimRewardResult'); if (!b || !el) return;
+            el.style.display = 'block'; el.innerHTML = '⏳ 领取中...'; b.disabled = true; b.textContent = '处理中...';
+            try {
+                await waitForTx(await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: RP, data: encodeCall('claimDailyReward()'), gas: '0xF4240' }] }));
+                el.innerHTML = '✅ 领取成功！'; el.style.borderLeftColor = '#4ecca3'; el.style.background = 'rgba(78,204,163,0.1)';
+                b.textContent = '已领取（明天再来）'; b.disabled = true;
+                setTimeout(function() { fetchAll(); }, 3000);
+            } catch (e) { var m = parseError(e); el.innerHTML = (m.indexOf('NotActive')!==-1)?'⚠️ 账户未激活':(m.indexOf('rejected')!==-1)?'⚠️ 已取消':'❌ '+m; }
+            finally { b.disabled = false; if (b.textContent.indexOf('已领取')===-1) b.textContent='领取奖励'; unlock(); }
+        }
+
+        // ===== 每日升级奖励 =====
+        async function fetchBonus() {
+            var ua = getAccount();
+            if (!ua) { st('bonusEstimate','--'); st('bonusPrincipal','0.00 USDT'); st('bonusDaily','0.000000 MYK'); st('bonusClaimed','0.000000 MYK'); st('bonusRemaining','--'); sd('claimBonusBtn',true); st('claimBonusBtn','📈 暂无升级奖励'); return; }
+            try {
+                var info = web3.eth.abi.decodeParameters(
+                    ['uint256','uint256','uint256','uint256','bool','uint256'],
+                    await web3.eth.call({ to: RP, data: encodeCall('getDailyBonusInfo(address)', ['address'], [ua]) })
+                );
+                var totalPrincipal = n(info[0]);
+                var totalDailyAmount = n(info[1]);
+                var totalClaimed = n(info[3]);
+                var isActive = info[4];
+                var claimableUSDT = n(info[5]);
+
+                var sp = cachedSpotPrice;
+                var dailyAmountMYK = sp > 0 ? totalDailyAmount / sp : 0;
+                var totalClaimedMYK = sp > 0 ? totalClaimed / sp : 0;
+                var claimableMYK = sp > 0 ? claimableUSDT / sp : 0;
+
+                var totalDays = _getBonusDays(totalPrincipal);
+                var claimedDays = totalDailyAmount > 0 ? Math.floor(totalClaimed / totalDailyAmount) : 0;
+                var remainingDays = Math.max(0, totalDays - claimedDays);
+
+                st('bonusEstimate', claimableMYK.toFixed(6));
+                st('bonusPrincipal', totalPrincipal.toFixed(2) + ' USDT');
+                st('bonusDaily', dailyAmountMYK.toFixed(6) + ' MYK');
+                st('bonusClaimed', totalClaimedMYK.toFixed(6) + ' MYK (' + claimedDays + '天)');
+                st('bonusRemaining', remainingDays + '天');
+
+                sd('claimBonusBtn', !isActive || remainingDays <= 0);
+                st('claimBonusBtn', !isActive ? '📈 暂无升级奖励' : remainingDays <= 0 ? '✅ 已全部领取' : '📈 领取今日升级奖励');
+            } catch (e) {
+                st('bonusEstimate','--'); st('bonusPrincipal','0.00 USDT'); st('bonusDaily','0.000000 MYK');
+                st('bonusClaimed','0.000000 MYK'); st('bonusRemaining','--');
+                sd('claimBonusBtn',true); st('claimBonusBtn','📈 暂无升级奖励');
+            }
+        }
+
+        function _getBonusDays(principalUSDT) {
+            if (principalUSDT >= 1000) return 360;
+            if (principalUSDT >= 500) return 300;
+            if (principalUSDT >= 200) return 240;
+            if (principalUSDT >= 100) return 180;
+            if (principalUSDT >= 50) return 120;
+            return 90;
+        }
+
+        async function claimBonus() {
+            var ua = getAccount(); if (!ua) { alert('请先连接钱包'); return; } if (!lock()) return;
+            var b = $('claimBonusBtn'), el = $('claimBonusResult'); if (!b || !el) return;
+            el.style.display = 'block'; el.innerHTML = '⏳ 领取中...'; b.disabled = true;
+            try {
+                await waitForTx(await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from: ua, to: RP, data: encodeCall('claimDailyBonus()') }] }));
+                el.innerHTML = '✅ 领取成功！'; el.style.borderLeftColor = '#4ecca3'; el.style.background = 'rgba(78,204,163,0.1)';
+                setTimeout(function() { fetchAll(); }, 3000);
+            } catch (e) { var m = parseError(e); el.innerHTML = (m.indexOf('NothingToClaim')!==-1||m.indexOf('already claimed')!==-1)?'⚠️ 今日已领取':m.indexOf('not active')!==-1?'⚠️ 暂无升级奖励':'❌ '+m; }
+            finally { b.disabled = false; unlock(); }
+        }
+
+        async function fetchAll() { await fetchSpotPrice(); await fetchLockInfo(); await fetchHoldingInfo(); await fetchBonus(); }
+
+        function doInit() {
+            var clb = $('claimLockedBtn'); if (clb) clb.addEventListener('click', claimLocked);
+            var crb = $('claimRewardBtn'); if (crb) crb.addEventListener('click', claimDailyReward);
+            var cbb = $('claimBonusBtn'); if (cbb) cbb.addEventListener('click', claimBonus);
+            fetchAll(); setInterval(fetchAll, 30000);
+            document.addEventListener('walletConnected', fetchAll);
+        }
+
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function() { setTimeout(doInit, 200); }); }
+        else { setTimeout(doInit, 200); }
+    });
+    </script>
+</div>
