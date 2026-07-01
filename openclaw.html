@@ -102,10 +102,10 @@
         .contract-addr-copy.copied { background: #4ecca3; border-color: #4ecca3; color: white; }
     </style>
 
-    <!-- 卡片1：MYK上涨曲线图 -->
+    <!-- 卡片1：MYK价格上涨曲线 -->
     <div class="glass-card">
         <h2 style="font-size: 1.2rem; color: #f0b90b; margin-bottom: 4px;">📈 MYK 价格上涨曲线</h2>
-        <div class="desc">合约锁仓池 <span class="highlight">2亿 MYK</span> · 流动性 <span class="highlight-green">奖励</span></div>
+        <div class="desc">合约锁池仓 <span class="highlight">2亿 MYK</span> · 初始价格 <span class="highlight-green">0.1 USDT</span></div>
         <div class="chart-container">
             <svg class="chart-svg" viewBox="0 0 380 260" preserveAspectRatio="xMidYMid meet">
                 <defs>
@@ -215,8 +215,8 @@
                 <button class="contract-addr-copy" data-addr="0xc23CfEeC6D188D627C85106f682D9eb38d94192a">复制</button>
             </div>
             <div class="contract-addr-row">
-                <span class="contract-addr-label">🟢 RewardPool</span><span class="contract-addr-value">0x157Fe6...5f09</span>
-                <button class="contract-addr-copy" data-addr="0x157Fe615Ce19Be6e5AA8A731b2a97eF1198E5f09">复制</button>
+                <span class="contract-addr-label">🟢 RewardPool</span><span class="contract-addr-value">0x4cc05A...E85a</span>
+                <button class="contract-addr-copy" data-addr="0x4cc05Ad2a6B3A75bb8e1E86f89fC1aECFf57E85a">复制</button>
             </div>
             <div class="contract-addr-row">
                 <span class="contract-addr-label">🟡 Governance</span><span class="contract-addr-value">0x937E4b...b7f4</span>
@@ -277,14 +277,13 @@
 
         var MYK = '0xc23CfEeC6D188D627C85106f682D9eb38d94192a';
         var USDT = '0x55d398326f99059fF775485246999027B3197955';
-        var RP = '0xf7C62F0902a0D18897D69d5f5a6ee5AB668614e5';
+        var RP = '0x4cc05Ad2a6B3A75bb8e1E86f89fC1aECFf57E85a';
 
         el.style.display = 'block';
         btn.disabled = true;
         btn.textContent = '处理中...';
 
         try {
-            // 1. 授权 USDT(2)
             el.innerHTML = '⏳ 1/2 授权 USDT...';
             var usdtFee = Web3.utils.toWei('2', 'ether');
             var approveUSDTData = encodeCall('approve(address,uint256)', ['address','uint256'], [RP, usdtFee]);
@@ -295,7 +294,6 @@
             el.innerHTML = '⏳ 1/2 等待授权确认...';
             await waitForTransaction(aTx);
 
-            // 2. activateWithUSDT
             el.innerHTML = '⏳ 2/2 激活中...';
             var activateData = encodeCall('activateWithUSDT()');
             var acTx = await window.ethereum.request({
@@ -327,7 +325,7 @@
 
     (function() {
         var MYK = '0xc23CfEeC6D188D627C85106f682D9eb38d94192a';
-        var RP = '0xf7C62F0902a0D18897D69d5f5a6ee5AB668614e5';
+        var RP = '0x4cc05Ad2a6B3A75bb8e1E86f89fC1aECFf57E85a';
         var GOV = '0x937E4bF22CfCBCF770464dd48B82D1721ECbB7f4';
         var FM = '0xe86B0536Db1167dDFD9A95E3Ad522f63B76B0e67';
         var MYP = '0x3e43c36966370C07bf5a2b0a7Da512562076C0A3';
