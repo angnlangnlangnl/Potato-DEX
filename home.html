@@ -337,8 +337,8 @@
                     '<div class="trade-record-row"><span class="trade-record-label">交易哈希</span><a class="tx-hash" href="https://bscscan.com/tx/' + record.txHash + '" target="_blank">' + record.txHash.substring(0, 10) + '...' + record.txHash.substring(record.txHash.length - 8) + '</a></div>' : '';
                 content.innerHTML = 
                     '<div class="trade-record-row"><span class="trade-record-label">交易对</span><span class="trade-record-value">' + record.inputToken + ' → ' + record.outputToken + '</span></div>' +
-                    '<div class="trade-record-row"><span class="trade-record-label">输入</span><span class="trade-record-value">' + record.inputAmount + ' ' + record.inputToken + '</span></div>' +
-                    '<div class="trade-record-row"><span class="trade-record-label">输出</span><span class="trade-record-value">' + record.outputAmount + ' ' + record.outputToken + '</span></div>' +
+                    '<div class="trade-record-row"><span class="trade-record-label">转入</span><span class="trade-record-value">' + record.inputAmount + ' ' + record.inputToken + '</span></div>' +
+                    '<div class="trade-record-row"><span class="trade-record-label">转出</span><span class="trade-record-value">' + record.outputAmount + ' ' + record.outputToken + '</span></div>' +
                     txHashDisplay;
             }
         }
