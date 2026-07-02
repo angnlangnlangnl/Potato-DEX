@@ -11,13 +11,25 @@
             color: #ccd6f0; 
         }
         .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #f0b90b; }
+
+        .search-row {
+            display: flex; gap: 8px; margin-bottom: 14px;
+        }
         .token-search {
-            width: 100%; padding: 10px 14px; background: #0d1125; border: 1px solid #2d325a;
-            border-radius: 12px; color: #fff; font-size: 14px; margin-bottom: 14px;
+            flex: 1; padding: 10px 14px; background: #0d1125; border: 1px solid #2d325a;
+            border-radius: 12px; color: #fff; font-size: 14px;
             outline: none; transition: border-color 0.2s;
         }
         .token-search::placeholder { color: #6b7394; }
         .token-search:focus { border-color: #4ecca3; }
+
+        .search-btn {
+            padding: 10px 16px; background: #2d325a; border: 1px solid #2d325a;
+            border-radius: 12px; color: #fff; font-size: 14px; cursor: pointer;
+            white-space: nowrap; transition: background 0.2s;
+        }
+        .search-btn:hover { background: #3d426a; }
+
         .input-row {
             background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
             padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
@@ -50,7 +62,13 @@
 
     <div class="glass-card">
         <div class="swap-title">🔄 兑换</div>
-        <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，按回车搜索">
+
+        <!-- 搜索行：输入框 + 搜索按钮 -->
+        <div class="search-row">
+            <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址">
+            <button class="search-btn" onclick="searchToken()">🔍 搜索</button>
+        </div>
+
         <div class="slippage">滑点容忍度: 0.5%</div>
 
         <div class="input-row">
@@ -108,7 +126,6 @@
             if (!window.web3 || !window.currentAccount) return 0;
             var addr = await getTokenAddress(tokenSymbol);
             if (!addr) {
-                // BNB balance
                 var balWei = await web3.eth.getBalance(window.currentAccount);
                 return n(balWei);
             }
@@ -166,8 +183,8 @@
             }
         }
 
-        // ====== 搜索功能：自动查找 PancakeSwap 交易对 ======
-        async function searchToken() {
+        // 搜索功能（供按钮和回车共用）
+        window.searchToken = async function() {
             var searchInput = $('tokenSearch');
             var query = searchInput.value.trim();
             if (!query) return;
@@ -195,10 +212,9 @@
                 var symbol = await tokenContract.methods.symbol().call();
                 var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
 
-                // 优先尝试与 WBNB 配对
+                // 优先尝试 WBNB 交易对
                 var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
                 if (pair !== '0x0000000000000000000000000000000000000000') {
-                    // 找到 WBNB 交易对
                     TOKEN_ADDRESSES[symbol] = tokenAddress;
                     currentInputToken = symbol;
                     currentOutputToken = 'BNB';
@@ -206,7 +222,7 @@
                     $('inputTokenBtn').textContent = symbol + ' ▼';
                     $('outputTokenBtn').textContent = 'BNB ▼';
                 } else {
-                    // 尝试与 USDT 配对
+                    // 尝试 USDT 交易对
                     var usdtAddr = TOKEN_ADDRESSES['USDT'];
                     pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
                     if (pair !== '0x0000000000000000000000000000000000000000') {
@@ -231,12 +247,13 @@
                 console.error(e);
                 parent.showToast('代币信息获取失败，请检查地址', 'error');
             }
-        }
+        };
 
+        // 回车也能搜索
         $('tokenSearch').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                searchToken();
+                window.searchToken();
             }
         });
 
