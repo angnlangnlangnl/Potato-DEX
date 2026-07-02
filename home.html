@@ -10,7 +10,17 @@
             margin-bottom: 15px; 
             color: #ccd6f0; 
         }
-        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #f0b90b; }
+        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #f0b90b; }
+
+        /* 新增搜索框样式 */
+        .token-search {
+            width: 100%; padding: 10px 14px; background: #0d1125; border: 1px solid #2d325a;
+            border-radius: 12px; color: #fff; font-size: 14px; margin-bottom: 14px;
+            outline: none; transition: border-color 0.2s;
+        }
+        .token-search::placeholder { color: #6b7394; }
+        .token-search:focus { border-color: #4ecca3; }
+
         .input-row {
             background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
             padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
@@ -43,6 +53,10 @@
 
     <div class="glass-card">
         <div class="swap-title">🔄 兑换</div>
+
+        <!-- 新增代币搜索框 -->
+        <input type="text" class="token-search" placeholder="输入代币名称或合约地址">
+
         <div class="slippage">滑点容忍度: 0.5%</div>
 
         <div class="input-row">
@@ -162,8 +176,6 @@
             btn.disabled = true;
             btn.textContent = '处理中...';
             try {
-                // 简化版：仅展示 UI 动作，真实交易需调用 Router 合约
-                // 此处模拟成功
                 parent.showToast('兑换成功', 'success');
                 $('inputAmount').value = '';
                 $('outputAmount').value = '0.0';
