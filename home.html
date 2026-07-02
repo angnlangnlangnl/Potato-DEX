@@ -63,7 +63,7 @@
 
         <div class="input-row">
             <input type="number" id="outputAmount" placeholder="0.0" readonly>
-            <button class="token-select" id="outputTokenBtn">MYK ▼</button>
+            <button class="token-select" id="outputTokenBtn">BNB ▼</button>
         </div>
         <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
 
@@ -92,7 +92,7 @@
         var FACTORY_ABI = [{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"getPair","outputs":[{"name":"","type":"address"}],"type":"function"}];
 
         var currentInputToken = 'USDT';
-        var currentOutputToken = 'MYK';
+        var currentOutputToken = 'BNB';
         var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
         var FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73';
         var WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
@@ -100,10 +100,15 @@
         function $(id) { return document.getElementById(id); }
         function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
 
+        async function getTokenAddress(symbol) {
+            return TOKEN_ADDRESSES[symbol] || null;
+        }
+
         async function getBalance(tokenSymbol) {
             if (!window.web3 || !window.currentAccount) return 0;
-            var addr = TOKEN_ADDRESSES[tokenSymbol];
+            var addr = await getTokenAddress(tokenSymbol);
             if (!addr) {
+                // BNB balance
                 var balWei = await web3.eth.getBalance(window.currentAccount);
                 return n(balWei);
             }
@@ -116,8 +121,8 @@
         async function fetchSpotPrice() {
             if (!web3) return 0;
             try {
-                var inputAddr = TOKEN_ADDRESSES[currentInputToken] || WBNB;
-                var outputAddr = TOKEN_ADDRESSES[currentOutputToken] || WBNB;
+                var inputAddr = (await getTokenAddress(currentInputToken)) || WBNB;
+                var outputAddr = (await getTokenAddress(currentOutputToken)) || WBNB;
                 if (inputAddr === outputAddr) return 1;
                 var path = [inputAddr, outputAddr];
                 var routerContract = new web3.eth.Contract([{"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}], ROUTER);
@@ -161,7 +166,7 @@
             }
         }
 
-        // ====== 新增搜索功能 ======
+        // ====== 搜索功能：自动查找 PancakeSwap 交易对 ======
         async function searchToken() {
             var searchInput = $('tokenSearch');
             var query = searchInput.value.trim();
@@ -172,17 +177,13 @@
             }
 
             var tokenAddress = null;
-            // 先检查是否已知名称
             var upperQuery = query.toUpperCase();
-            if (TOKEN_ADDRESSES[upperQuery]) {
+            if (TOKEN_ADDRESSES[upperQuery] !== undefined) {
                 tokenAddress = TOKEN_ADDRESSES[upperQuery];
-                // 如果是BNB（null），特殊处理为WBNB
                 if (tokenAddress === null) {
                     tokenAddress = WBNB;
-                    upperQuery = 'WBNB';
                 }
             } else if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
-                // 输入的是合约地址
                 tokenAddress = query;
             } else {
                 parent.showToast('无效的合约地址', 'error');
@@ -192,42 +193,46 @@
             try {
                 var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
                 var symbol = await tokenContract.methods.symbol().call();
-                var decimals = await tokenContract.methods.decimals().call();
-
-                // 检查与WBNB的交易对
                 var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
+
+                // 优先尝试与 WBNB 配对
                 var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
-                if (pair === '0x0000000000000000000000000000000000000000') {
-                    parent.showToast('未找到与BNB的交易对', 'error');
-                    return;
-                }
-
-                // 成功找到，更新TOKEN_ADDRESSES（如果尚未存在）
-                if (!TOKEN_ADDRESSES[symbol]) {
+                if (pair !== '0x0000000000000000000000000000000000000000') {
+                    // 找到 WBNB 交易对
                     TOKEN_ADDRESSES[symbol] = tokenAddress;
+                    currentInputToken = symbol;
+                    currentOutputToken = 'BNB';
+                    TOKEN_ADDRESSES['BNB'] = null;
+                    $('inputTokenBtn').textContent = symbol + ' ▼';
+                    $('outputTokenBtn').textContent = 'BNB ▼';
+                } else {
+                    // 尝试与 USDT 配对
+                    var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                    pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
+                    if (pair !== '0x0000000000000000000000000000000000000000') {
+                        TOKEN_ADDRESSES[symbol] = tokenAddress;
+                        currentInputToken = symbol;
+                        currentOutputToken = 'USDT';
+                        $('inputTokenBtn').textContent = symbol + ' ▼';
+                        $('outputTokenBtn').textContent = 'USDT ▼';
+                    } else {
+                        parent.showToast('未找到该代币的交易对 (BNB/USDT)', 'error');
+                        return;
+                    }
                 }
 
-                // 设置为输入代币，输出代币默认为BNB
-                currentInputToken = symbol;
-                currentOutputToken = 'BNB';
-                TOKEN_ADDRESSES['BNB'] = null; // 确保BNB存在
-
-                $('inputTokenBtn').textContent = symbol + ' ▼';
-                $('outputTokenBtn').textContent = 'BNB ▼';
                 $('inputAmount').value = '';
                 $('outputAmount').value = '0.0';
-
                 updateBalances();
                 updateRate();
                 searchInput.value = '';
-                parent.showToast('已加载 ' + symbol + '/BNB 交易对', 'success');
+                parent.showToast('已加载 ' + currentInputToken + '/' + currentOutputToken + ' 交易对', 'success');
             } catch (e) {
                 console.error(e);
                 parent.showToast('代币信息获取失败，请检查地址', 'error');
             }
         }
 
-        // 监听搜索框回车事件
         $('tokenSearch').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -235,7 +240,6 @@
             }
         });
 
-        // 原有的交换代币功能
         window.swapTokens = function() {
             var temp = currentInputToken;
             currentInputToken = currentOutputToken;
