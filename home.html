@@ -12,7 +12,6 @@
         }
         .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #f0b90b; }
         
-        /* 搜索框 + 内部图标 */
         .search-wrapper { position: relative; margin-bottom: 14px; }
         .token-search {
             width: 100%; padding: 10px 40px 10px 14px; background: #0d1125; border: 1px solid #2d325a;
@@ -123,7 +122,7 @@
         function $(id) { return document.getElementById(id); }
         function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
 
-        // 获取代币的小数位数
+        // 获取代币小数位数
         async function getDecimals(tokenSymbol) {
             if (tokenSymbol === 'BNB') return 18;
             var addr = TOKEN_ADDRESSES[tokenSymbol];
@@ -132,7 +131,7 @@
             return await contract.methods.decimals().call();
         }
 
-        // 根据代币符号获取链上数量（人类可读）
+        // 获取代币余额（人类可读）
         async function getBalance(tokenSymbol) {
             if (!window.web3 || !window.currentAccount) return 0;
             if (tokenSymbol === 'BNB') {
@@ -152,20 +151,17 @@
             var inputAddr = (inputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[inputSymbol];
             var outputAddr = (outputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[outputSymbol];
             if (!inputAddr || !outputAddr) return null;
-            if (inputAddr === outputAddr) return [inputAddr]; // 不应该发生
+            if (inputAddr === outputAddr) return [inputAddr];
 
-            // 先尝试直接路径
             try {
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
                 await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, outputAddr]).call();
                 return [inputAddr, outputAddr];
             } catch (e) {
-                // 直接路径失败，尝试通过 WBNB 中转
                 try {
                     await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, WBNB, outputAddr]).call();
                     return [inputAddr, WBNB, outputAddr];
                 } catch (e2) {
-                    // 再尝试通过 USDT 中转
                     var usdtAddr = TOKEN_ADDRESSES['USDT'];
                     try {
                         await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, usdtAddr, outputAddr]).call();
@@ -177,7 +173,7 @@
             }
         }
 
-        // 查询现货价格（使用1个输入代币为基准）
+        // 获取现货价格（基于1个输入代币）
         async function fetchSpotPrice() {
             if (!web3) return 0;
             try {
@@ -231,7 +227,7 @@
             }
         }
 
-        // ====== 搜索功能 ======
+        // 搜索功能（不变）
         async function searchToken() {
             var searchInput = $('tokenSearch');
             var query = searchInput.value.trim();
@@ -257,14 +253,12 @@
                 var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
                 var symbol = await tokenContract.methods.symbol().call();
                 var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
-                // 优先 WBNB 配对
                 var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
                 if (pair !== '0x0000000000000000000000000000000000000000') {
                     TOKEN_ADDRESSES[symbol] = tokenAddress;
                     currentInputToken = symbol;
                     currentOutputToken = 'BNB';
                 } else {
-                    // 尝试 USDT 配对
                     var usdtAddr = TOKEN_ADDRESSES['USDT'];
                     pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
                     if (pair !== '0x0000000000000000000000000000000000000000') {
@@ -290,27 +284,14 @@
             }
         }
 
-        // 回车事件
+        // 事件绑定
         $('tokenSearch').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                searchToken();
-            }
+            if (e.key === 'Enter') { e.preventDefault(); searchToken(); }
         });
-
-        // 搜索图标点击事件
-        $('searchIconBtn').addEventListener('click', function() {
-            searchToken();
-        });
-
-        // ====== 全部余额点击事件 ======
+        $('searchIconBtn').addEventListener('click', searchToken);
         $('inputMaxBtn').addEventListener('click', function() {
-            var balText = $('inputBalance').textContent;
-            var bal = parseFloat(balText) || 0;
-            if (bal > 0) {
-                $('inputAmount').value = bal;
-                updateRate();
-            }
+            var bal = parseFloat($('inputBalance').textContent) || 0;
+            if (bal > 0) { $('inputAmount').value = bal; updateRate(); }
         });
 
         window.swapTokens = function() {
@@ -325,7 +306,7 @@
             updateRate();
         };
 
-        // ========== 真实链上兑换 ==========
+        // ========== 真实链上兑换（已修复 gas 问题） ==========
         window.executeSwap = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -341,10 +322,16 @@
             btn.textContent = '检查授权...';
 
             try {
+                var account = window.currentAccount;
                 var inputDecimals = await getDecimals(currentInputToken);
-                var amountInWei = web3.utils.toWei(amount, 'ether');
-                if (inputDecimals !== 18) {
-                    amountInWei = BigInt(Math.floor(parseFloat(amount) * 10**inputDecimals)).toString();
+                var outputDecimals = await getDecimals(currentOutputToken);
+
+                // 转换数量为最小单位
+                var amountInWei;
+                if (inputDecimals === 18) {
+                    amountInWei = web3.utils.toWei(amount, 'ether');
+                } else {
+                    amountInWei = BigInt(Math.floor(parseFloat(amount) * (10 ** inputDecimals))).toString();
                 }
 
                 // 构建路径
@@ -356,7 +343,7 @@
                     return;
                 }
 
-                // 计算最小输出量（滑点0.5%）
+                // 计算最小输出（滑点0.5%）
                 var price = await fetchSpotPrice();
                 if (price <= 0) {
                     parent.showToast('无法获取价格', 'error');
@@ -365,53 +352,56 @@
                     return;
                 }
                 var expectedOut = parseFloat(amount) * price;
-                var amountOutMin = expectedOut * 0.995; // 0.5% 滑点
-                var outputDecimals = await getDecimals(currentOutputToken);
-                var amountOutMinWei = web3.utils.toWei(amountOutMin.toFixed(outputDecimals), 'ether');
-                if (outputDecimals !== 18) {
-                    amountOutMinWei = BigInt(Math.floor(amountOutMin * 10**outputDecimals)).toString();
+                var amountOutMin = expectedOut * 0.995;
+                var amountOutMinWei;
+                if (outputDecimals === 18) {
+                    amountOutMinWei = web3.utils.toWei(amountOutMin.toFixed(18), 'ether');
+                } else {
+                    amountOutMinWei = BigInt(Math.floor(amountOutMin * (10 ** outputDecimals))).toString();
                 }
 
-                var deadline = Math.floor(Date.now()/1000) + 600; // 10分钟
+                var deadline = Math.floor(Date.now()/1000) + 600;
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
-                var tx;
+                var gasEstimate;
 
-                // 根据交易对类型选择方法
                 if (currentInputToken === 'BNB') {
                     // BNB -> Token
-                    btn.textContent = '等待确认 (BNB兑换)';
-                    tx = await routerContract.methods.swapExactETHForTokens(
-                        amountOutMinWei, path, window.currentAccount, deadline
-                    ).send({ from: window.currentAccount, value: amountInWei });
-                } else if (currentOutputToken === 'BNB') {
-                    // Token -> BNB
+                    btn.textContent = '等待确认...';
+                    var txObj = routerContract.methods.swapExactETHForTokens(
+                        amountOutMinWei, path, account, deadline
+                    );
+                    gasEstimate = await txObj.estimateGas({ from: account, value: amountInWei });
+                    await txObj.send({ from: account, value: amountInWei, gas: Math.floor(gasEstimate * 1.2) });
+                } else {
                     // 授权检查
                     var tokenAddr = TOKEN_ADDRESSES[currentInputToken];
                     var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
-                    var allowance = await tokenContract.methods.allowance(window.currentAccount, ROUTER).call();
+                    var allowance = await tokenContract.methods.allowance(account, ROUTER).call();
                     if (BigInt(allowance) < BigInt(amountInWei)) {
                         btn.textContent = '授权中...';
-                        parent.showToast('首次交易需授权，请确认', 'info');
-                        await tokenContract.methods.approve(ROUTER, MAX_UINT256).send({ from: window.currentAccount });
-                        btn.textContent = '授权完成，准备兑换...';
+                        parent.showToast('需要授权，请确认', 'info');
+                        var approveTx = tokenContract.methods.approve(ROUTER, MAX_UINT256);
+                        var approveGas = await approveTx.estimateGas({ from: account });
+                        await approveTx.send({ from: account, gas: Math.floor(approveGas * 1.2) });
+                        parent.showToast('授权成功，继续兑换', 'success');
+                        btn.textContent = '正在兑换...';
                     }
-                    tx = await routerContract.methods.swapExactTokensForETH(
-                        amountInWei, amountOutMinWei, path, window.currentAccount, deadline
-                    ).send({ from: window.currentAccount });
-                } else {
-                    // Token -> Token
-                    var tokenAddrIn = TOKEN_ADDRESSES[currentInputToken];
-                    var tokenContractIn = new web3.eth.Contract(ERC20_ABI, tokenAddrIn);
-                    var allowanceIn = await tokenContractIn.methods.allowance(window.currentAccount, ROUTER).call();
-                    if (BigInt(allowanceIn) < BigInt(amountInWei)) {
-                        btn.textContent = '授权中...';
-                        parent.showToast('首次交易需授权，请确认', 'info');
-                        await tokenContractIn.methods.approve(ROUTER, MAX_UINT256).send({ from: window.currentAccount });
-                        btn.textContent = '授权完成，准备兑换...';
+
+                    if (currentOutputToken === 'BNB') {
+                        // Token -> BNB
+                        var txObj2 = routerContract.methods.swapExactTokensForETH(
+                            amountInWei, amountOutMinWei, path, account, deadline
+                        );
+                        gasEstimate = await txObj2.estimateGas({ from: account });
+                        await txObj2.send({ from: account, gas: Math.floor(gasEstimate * 1.2) });
+                    } else {
+                        // Token -> Token
+                        var txObj3 = routerContract.methods.swapExactTokensForTokens(
+                            amountInWei, amountOutMinWei, path, account, deadline
+                        );
+                        gasEstimate = await txObj3.estimateGas({ from: account });
+                        await txObj3.send({ from: account, gas: Math.floor(gasEstimate * 1.2) });
                     }
-                    tx = await routerContract.methods.swapExactTokensForTokens(
-                        amountInWei, amountOutMinWei, path, window.currentAccount, deadline
-                    ).send({ from: window.currentAccount });
                 }
 
                 parent.showToast('兑换成功！', 'success');
@@ -435,7 +425,6 @@
         };
 
         $('inputAmount').addEventListener('input', updateRate);
-
         document.addEventListener('walletConnected', function() {
             updateBalances();
             updateRate();
