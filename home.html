@@ -73,7 +73,6 @@
             <button class="token-select" id="inputTokenBtn">USDT ▼</button>
         </div>
         
-       
         <div class="swap-arrow" onclick="swapTokens()">↓</div>
         <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
 
@@ -103,7 +102,14 @@
             {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
             {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"type":"function"},
             {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
-            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"}
+            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"}
+        ];
+        var ROUTER_ABI = [
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactETHForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForETH","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}
         ];
         var FACTORY_ABI = [{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"getPair","outputs":[{"name":"","type":"address"}],"type":"function"}];
 
@@ -112,37 +118,81 @@
         var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
         var FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73';
         var WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
+        var MAX_UINT256 = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
 
         function $(id) { return document.getElementById(id); }
         function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
 
-        async function getTokenAddress(symbol) {
-            return TOKEN_ADDRESSES[symbol] || null;
+        // 获取代币的小数位数
+        async function getDecimals(tokenSymbol) {
+            if (tokenSymbol === 'BNB') return 18;
+            var addr = TOKEN_ADDRESSES[tokenSymbol];
+            if (!addr) return 18;
+            var contract = new web3.eth.Contract(ERC20_ABI, addr);
+            return await contract.methods.decimals().call();
         }
 
+        // 根据代币符号获取链上数量（人类可读）
         async function getBalance(tokenSymbol) {
             if (!window.web3 || !window.currentAccount) return 0;
-            var addr = await getTokenAddress(tokenSymbol);
-            if (!addr) {
+            if (tokenSymbol === 'BNB') {
                 var balWei = await web3.eth.getBalance(window.currentAccount);
                 return n(balWei);
             }
+            var addr = TOKEN_ADDRESSES[tokenSymbol];
+            if (!addr) return 0;
             var contract = new web3.eth.Contract(ERC20_ABI, addr);
             var decimals = await contract.methods.decimals().call();
             var bal = await contract.methods.balanceOf(window.currentAccount).call();
             return parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
         }
 
+        // 构建有效兑换路径（自动处理无直接交易对的情况）
+        async function buildPath(inputSymbol, outputSymbol) {
+            var inputAddr = (inputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[inputSymbol];
+            var outputAddr = (outputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[outputSymbol];
+            if (!inputAddr || !outputAddr) return null;
+            if (inputAddr === outputAddr) return [inputAddr]; // 不应该发生
+
+            // 先尝试直接路径
+            try {
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, outputAddr]).call();
+                return [inputAddr, outputAddr];
+            } catch (e) {
+                // 直接路径失败，尝试通过 WBNB 中转
+                try {
+                    await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, WBNB, outputAddr]).call();
+                    return [inputAddr, WBNB, outputAddr];
+                } catch (e2) {
+                    // 再尝试通过 USDT 中转
+                    var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                    try {
+                        await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, usdtAddr, outputAddr]).call();
+                        return [inputAddr, usdtAddr, outputAddr];
+                    } catch (e3) {
+                        return null;
+                    }
+                }
+            }
+        }
+
+        // 查询现货价格（使用1个输入代币为基准）
         async function fetchSpotPrice() {
             if (!web3) return 0;
             try {
-                var inputAddr = (await getTokenAddress(currentInputToken)) || WBNB;
-                var outputAddr = (await getTokenAddress(currentOutputToken)) || WBNB;
-                if (inputAddr === outputAddr) return 1;
-                var path = [inputAddr, outputAddr];
-                var routerContract = new web3.eth.Contract([{"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}], ROUTER);
-                var amounts = await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), path).call();
-                return n(amounts[1]);
+                var path = await buildPath(currentInputToken, currentOutputToken);
+                if (!path) return 0;
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                var decimals = await getDecimals(currentInputToken);
+                var oneUnit = web3.utils.toWei('1', 'ether');
+                if (decimals !== 18) {
+                    oneUnit = BigInt(10 ** decimals).toString();
+                }
+                var amounts = await routerContract.methods.getAmountsOut(oneUnit, path).call();
+                var outputDecimals = await getDecimals(currentOutputToken);
+                var rawOut = amounts[amounts.length-1];
+                return parseFloat(web3.utils.fromWei(rawOut, 'ether')) / Math.pow(10, 18 - outputDecimals);
             } catch (e) {
                 return 0;
             }
@@ -160,7 +210,7 @@
             if (price > 0) {
                 $('rateInfo').textContent = '1 ' + currentInputToken + ' ≈ ' + price.toFixed(6) + ' ' + currentOutputToken;
             } else {
-                $('rateInfo').textContent = '价格获取中...';
+                $('rateInfo').textContent = '无法获取价格';
             }
             var inputAmt = parseFloat($('inputAmount').value) || 0;
             if (inputAmt > 0 && price > 0) {
@@ -195,9 +245,7 @@
             var upperQuery = query.toUpperCase();
             if (TOKEN_ADDRESSES[upperQuery] !== undefined) {
                 tokenAddress = TOKEN_ADDRESSES[upperQuery];
-                if (tokenAddress === null) {
-                    tokenAddress = WBNB;
-                }
+                if (tokenAddress === null) tokenAddress = WBNB;
             } else if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
                 tokenAddress = query;
             } else {
@@ -209,16 +257,12 @@
                 var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
                 var symbol = await tokenContract.methods.symbol().call();
                 var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
-
                 // 优先 WBNB 配对
                 var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
                 if (pair !== '0x0000000000000000000000000000000000000000') {
                     TOKEN_ADDRESSES[symbol] = tokenAddress;
                     currentInputToken = symbol;
                     currentOutputToken = 'BNB';
-                    TOKEN_ADDRESSES['BNB'] = null;
-                    $('inputTokenBtn').textContent = symbol + ' ▼';
-                    $('outputTokenBtn').textContent = 'BNB ▼';
                 } else {
                     // 尝试 USDT 配对
                     var usdtAddr = TOKEN_ADDRESSES['USDT'];
@@ -227,14 +271,13 @@
                         TOKEN_ADDRESSES[symbol] = tokenAddress;
                         currentInputToken = symbol;
                         currentOutputToken = 'USDT';
-                        $('inputTokenBtn').textContent = symbol + ' ▼';
-                        $('outputTokenBtn').textContent = 'USDT ▼';
                     } else {
                         parent.showToast('未找到该代币的交易对 (BNB/USDT)', 'error');
                         return;
                     }
                 }
-
+                $('inputTokenBtn').textContent = currentInputToken + ' ▼';
+                $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
                 $('inputAmount').value = '';
                 $('outputAmount').value = '0.0';
                 updateBalances();
@@ -282,26 +325,113 @@
             updateRate();
         };
 
+        // ========== 真实链上兑换 ==========
         window.executeSwap = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
                 return;
             }
             var amount = $('inputAmount').value;
-            if (!amount || parseFloat(amount) <= 0) return;
+            if (!amount || parseFloat(amount) <= 0) {
+                parent.showToast('请输入有效数量', 'error');
+                return;
+            }
             var btn = $('swapButton');
             btn.disabled = true;
-            btn.textContent = '处理中...';
+            btn.textContent = '检查授权...';
+
             try {
-                parent.showToast('兑换成功', 'success');
+                var inputDecimals = await getDecimals(currentInputToken);
+                var amountInWei = web3.utils.toWei(amount, 'ether');
+                if (inputDecimals !== 18) {
+                    amountInWei = BigInt(Math.floor(parseFloat(amount) * 10**inputDecimals)).toString();
+                }
+
+                // 构建路径
+                var path = await buildPath(currentInputToken, currentOutputToken);
+                if (!path) {
+                    parent.showToast('无有效兑换路径', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '兑换';
+                    return;
+                }
+
+                // 计算最小输出量（滑点0.5%）
+                var price = await fetchSpotPrice();
+                if (price <= 0) {
+                    parent.showToast('无法获取价格', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '兑换';
+                    return;
+                }
+                var expectedOut = parseFloat(amount) * price;
+                var amountOutMin = expectedOut * 0.995; // 0.5% 滑点
+                var outputDecimals = await getDecimals(currentOutputToken);
+                var amountOutMinWei = web3.utils.toWei(amountOutMin.toFixed(outputDecimals), 'ether');
+                if (outputDecimals !== 18) {
+                    amountOutMinWei = BigInt(Math.floor(amountOutMin * 10**outputDecimals)).toString();
+                }
+
+                var deadline = Math.floor(Date.now()/1000) + 600; // 10分钟
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                var tx;
+
+                // 根据交易对类型选择方法
+                if (currentInputToken === 'BNB') {
+                    // BNB -> Token
+                    btn.textContent = '等待确认 (BNB兑换)';
+                    tx = await routerContract.methods.swapExactETHForTokens(
+                        amountOutMinWei, path, window.currentAccount, deadline
+                    ).send({ from: window.currentAccount, value: amountInWei });
+                } else if (currentOutputToken === 'BNB') {
+                    // Token -> BNB
+                    // 授权检查
+                    var tokenAddr = TOKEN_ADDRESSES[currentInputToken];
+                    var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
+                    var allowance = await tokenContract.methods.allowance(window.currentAccount, ROUTER).call();
+                    if (BigInt(allowance) < BigInt(amountInWei)) {
+                        btn.textContent = '授权中...';
+                        parent.showToast('首次交易需授权，请确认', 'info');
+                        await tokenContract.methods.approve(ROUTER, MAX_UINT256).send({ from: window.currentAccount });
+                        btn.textContent = '授权完成，准备兑换...';
+                    }
+                    tx = await routerContract.methods.swapExactTokensForETH(
+                        amountInWei, amountOutMinWei, path, window.currentAccount, deadline
+                    ).send({ from: window.currentAccount });
+                } else {
+                    // Token -> Token
+                    var tokenAddrIn = TOKEN_ADDRESSES[currentInputToken];
+                    var tokenContractIn = new web3.eth.Contract(ERC20_ABI, tokenAddrIn);
+                    var allowanceIn = await tokenContractIn.methods.allowance(window.currentAccount, ROUTER).call();
+                    if (BigInt(allowanceIn) < BigInt(amountInWei)) {
+                        btn.textContent = '授权中...';
+                        parent.showToast('首次交易需授权，请确认', 'info');
+                        await tokenContractIn.methods.approve(ROUTER, MAX_UINT256).send({ from: window.currentAccount });
+                        btn.textContent = '授权完成，准备兑换...';
+                    }
+                    tx = await routerContract.methods.swapExactTokensForTokens(
+                        amountInWei, amountOutMinWei, path, window.currentAccount, deadline
+                    ).send({ from: window.currentAccount });
+                }
+
+                parent.showToast('兑换成功！', 'success');
                 $('inputAmount').value = '';
                 $('outputAmount').value = '0.0';
                 updateBalances();
             } catch (e) {
-                parent.showToast('交易失败: ' + e.message, 'error');
+                console.error(e);
+                var msg = e.message || '';
+                if (msg.includes('User denied') || msg.includes('rejected')) {
+                    parent.showToast('交易已取消', 'error');
+                } else if (msg.includes('INSUFFICIENT_OUTPUT_AMOUNT')) {
+                    parent.showToast('价格波动过大，请重试', 'error');
+                } else {
+                    parent.showToast('交易失败: ' + msg.substring(0, 100), 'error');
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '兑换';
             }
-            btn.disabled = false;
-            btn.textContent = '兑换';
         };
 
         $('inputAmount').addEventListener('input', updateRate);
