@@ -1,37 +1,31 @@
-<div id="page-home" class="page-container">
+<div id="page-trade" class="page-container">
     <style>
-        .swap-container { padding: 20px 0; }
-        .search-bar {
-            background: rgba(18,22,40,0.8); border: 1px solid #2d325a;
-            border-radius: 12px; padding: 12px 16px; margin-bottom: 15px;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .search-bar input {
-            flex: 1; background: transparent; border: none;
-            color: #fff; font-size: 15px; outline: none;
-        }
-        .search-bar input::placeholder { color: #666; }
-        .search-bar .search-icon { color: #888; font-size: 18px; }
-        .swap-card {
-            background: rgba(18,22,40,0.8); border: 1px solid #2d325a;
-            border-radius: 20px; padding: 20px;
+        .glass-card { 
+            background: rgba(18,22,40,0.7); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            color: #ccd6f0; 
         }
         .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #f0b90b; }
-        .token-input {
+        .input-row {
             background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
-            padding: 12px 15px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
         }
-        .token-input input {
-            background: transparent; border: none; color: #fff; font-size: 24px;
+        .input-row input {
+            background: transparent; border: none; color: #fff; font-size: 20px;
             width: 60%; outline: none; -moz-appearance: textfield;
         }
-        .token-input input::-webkit-outer-spin-button,
-        .token-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-row input::-webkit-outer-spin-button,
+        .input-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .token-select {
-            background: #2d325a; border: none; color: #fff; padding: 8px 12px;
+            background: #2d325a; border: none; color: #fff; padding: 8px 14px;
             border-radius: 20px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;
         }
-        .token-balance { font-size: 11px; color: #888; margin-left: 5px; }
+        .balance-row { text-align: right; font-size: 12px; color: #888; padding: 0 10px; margin-bottom: 8px; }
         .swap-arrow {
             width: 40px; height: 40px; background: #1e2a4a; border: 2px solid #2d325a;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -40,157 +34,165 @@
         .swap-btn {
             width: 100%; padding: 14px; border: none; border-radius: 16px;
             font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s;
+            background: #f0b90b; color: #0b0f1a;
         }
-        .swap-btn.active { background: linear-gradient(135deg, #f0b90b, #f7c744); color: #0b0f1a; }
-        .swap-btn.disabled { background: #2d325a; color: #666; cursor: not-allowed; }
-        .price-info { font-size: 12px; color: #888; margin-top: 10px; text-align: center; }
+        .swap-btn:disabled { background: #2d325a; color: #666; cursor: not-allowed; }
+        .price-info { font-size: 13px; color: #888; text-align: center; margin-top: 12px; }
+        .slippage { display: flex; justify-content: flex-end; margin-bottom: 10px; font-size: 12px; color: #888; }
     </style>
 
-    <div class="swap-container">
-        <!-- 新增代币搜索栏 -->
-        <div class="search-bar">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="tokenSearch" placeholder="输入代币名称或合约地址" autocomplete="off">
+    <div class="glass-card">
+        <div class="swap-title">🔄 兑换</div>
+        <div class="slippage">滑点容忍度: 0.5%</div>
+
+        <div class="input-row">
+            <input type="number" id="inputAmount" placeholder="0.0" step="any">
+            <button class="token-select" id="inputTokenBtn">USDT ▼</button>
         </div>
+        <div class="balance-row">余额: <span id="inputBalance">0.00</span></div>
 
-        <div class="swap-card">
-            <div class="swap-title">🔄 兑换代币</div>
-            <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
-                <span style="font-size:12px;color:#888;">滑点 0.5%</span>
-            </div>
-            
-            <div class="token-input">
-                <input type="number" id="inputAmount" placeholder="0.0" step="any">
-                <button class="token-select" onclick="selectToken('input')">
-                    <span id="inputToken">POTATO</span> ▼
-                </button>
-            </div>
-            <div style="text-align:right;padding-right:10px;">
-                <span class="token-balance">余额: <span id="inputBalance">0.00</span></span>
-            </div>
+        <div class="swap-arrow" onclick="swapTokens()">↓</div>
 
-            <div class="swap-arrow" onclick="swapTokens()">↓</div>
-
-            <div class="token-input">
-                <input type="number" id="outputAmount" placeholder="0.0" readonly>
-                <button class="token-select" onclick="selectToken('output')">
-                    <span id="outputToken">ETH</span> ▼
-                </button>
-            </div>
-            <div style="text-align:right;padding-right:10px;">
-                <span class="token-balance">余额: <span id="outputBalance">0.00</span></span>
-            </div>
-
-            <button id="swapButton" class="swap-btn disabled" onclick="executeSwap()">连接钱包</button>
-            <div class="price-info">1 POTATO = <span id="exchangeRate">--</span> ETH</div>
+        <div class="input-row">
+            <input type="number" id="outputAmount" placeholder="0.0" readonly>
+            <button class="token-select" id="outputTokenBtn">MYK ▼</button>
         </div>
+        <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
+
+        <button id="swapButton" class="swap-btn" onclick="executeSwap()">连接钱包</button>
+        <div class="price-info" id="rateInfo">--</div>
     </div>
 
     <script>
-    var tokenPrices = {
-        'POTATO': { price: 0.0001, balance: 10000 },
-        'ETH': { price: 3000, balance: 1.5 },
-        'USDT': { price: 1, balance: 5000 },
-        'LAND': { price: 50, balance: 100 }
-    };
-    var currentInputToken = 'POTATO';
-    var currentOutputToken = 'ETH';
+    (function() {
+        var TOKEN_ADDRESSES = {
+            'USDT': '0x55d398326f99059fF775485246999027B3197955',
+            'MYK': '0xc23CfEeC6D188D627C85106f682D9eb38d94192a',
+            'BNB': null,
+            'BUSD': '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56'
+        };
+        var ERC20_ABI = [{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}];
 
-    function updateSwapUI() {
-        var inputAmt = parseFloat(document.getElementById('inputAmount').value) || 0;
-        var rate = getExchangeRate();
-        document.getElementById('exchangeRate').textContent = rate.toFixed(6);
-        if (inputAmt > 0 && rate > 0) {
-            document.getElementById('outputAmount').value = (inputAmt * rate * 0.995).toFixed(6);
-        } else {
-            document.getElementById('outputAmount').value = '0.0';
-        }
-        updateBalances();
-        updateSwapButton();
-    }
+        var currentInputToken = 'USDT';
+        var currentOutputToken = 'MYK';
+        var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+        var FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73';
 
-    function getExchangeRate() {
-        if (currentInputToken === currentOutputToken) return 1;
-        var inputPrice = tokenPrices[currentInputToken] ? tokenPrices[currentInputToken].price : 0;
-        var outputPrice = tokenPrices[currentOutputToken] ? tokenPrices[currentOutputToken].price : 0;
-        return outputPrice > 0 ? inputPrice / outputPrice : 0;
-    }
+        function $(id) { return document.getElementById(id); }
+        function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
 
-    function updateBalances() {
-        if (tokenPrices[currentInputToken]) {
-            document.getElementById('inputBalance').textContent = tokenPrices[currentInputToken].balance.toFixed(2);
-        }
-        if (tokenPrices[currentOutputToken]) {
-            document.getElementById('outputBalance').textContent = tokenPrices[currentOutputToken].balance.toFixed(2);
-        }
-    }
-
-    function updateSwapButton() {
-        var btn = document.getElementById('swapButton');
-        var inputAmt = parseFloat(document.getElementById('inputAmount').value) || 0;
-        if (!window.isConnected) {
-            btn.textContent = '连接钱包';
-            btn.className = 'swap-btn disabled';
-        } else if (inputAmt <= 0) {
-            btn.textContent = '输入金额';
-            btn.className = 'swap-btn disabled';
-        } else if (inputAmt > (tokenPrices[currentInputToken] ? tokenPrices[currentInputToken].balance : 0)) {
-            btn.textContent = '余额不足';
-            btn.className = 'swap-btn disabled';
-        } else {
-            btn.textContent = '兑换';
-            btn.className = 'swap-btn active';
-        }
-    }
-
-    function swapTokens() {
-        var temp = currentInputToken;
-        currentInputToken = currentOutputToken;
-        currentOutputToken = temp;
-        document.getElementById('inputToken').textContent = currentInputToken;
-        document.getElementById('outputToken').textContent = currentOutputToken;
-        document.getElementById('inputAmount').value = '';
-        document.getElementById('outputAmount').value = '0.0';
-        updateSwapUI();
-    }
-
-    function selectToken(type) {
-        var tokens = Object.keys(tokenPrices);
-        var selected = prompt('选择代币:\n' + tokens.join(', '), type === 'input' ? currentInputToken : currentOutputToken);
-        if (selected && tokenPrices[selected]) {
-            if (type === 'input') {
-                currentInputToken = selected;
-                document.getElementById('inputToken').textContent = selected;
-            } else {
-                currentOutputToken = selected;
-                document.getElementById('outputToken').textContent = selected;
+        async function getBalance(tokenSymbol) {
+            if (!window.web3 || !window.currentAccount) return 0;
+            var addr = TOKEN_ADDRESSES[tokenSymbol];
+            if (!addr) {
+                var balWei = await web3.eth.getBalance(window.currentAccount);
+                return n(balWei);
             }
-            document.getElementById('inputAmount').value = '';
-            document.getElementById('outputAmount').value = '0.0';
-            updateSwapUI();
+            var contract = new web3.eth.Contract(ERC20_ABI, addr);
+            var decimals = await contract.methods.decimals().call();
+            var bal = await contract.methods.balanceOf(window.currentAccount).call();
+            return parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
         }
-    }
 
-    function executeSwap() {
-        if (!window.isConnected) {
-            window.top.showToast ? window.top.showToast('请先连接钱包', 'error') : alert('请先连接钱包');
-            return;
+        async function fetchSpotPrice() {
+            if (!web3) return 0;
+            try {
+                var path = [TOKEN_ADDRESSES[currentInputToken] || '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', TOKEN_ADDRESSES[currentOutputToken] || '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'];
+                var routerContract = new web3.eth.Contract([{"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}], ROUTER);
+                var amounts = await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), path).call();
+                return n(amounts[1]);
+            } catch (e) {
+                return 0;
+            }
         }
-        var inputAmt = parseFloat(document.getElementById('inputAmount').value) || 0;
-        var outputAmt = parseFloat(document.getElementById('outputAmount').value) || 0;
-        if (inputAmt > 0 && outputAmt > 0) {
-            window.top.showToast('兑换成功！' + inputAmt + ' ' + currentInputToken + ' → ' + outputAmt + ' ' + currentOutputToken, 'success');
-            document.getElementById('inputAmount').value = '';
-            document.getElementById('outputAmount').value = '0.0';
-            updateSwapUI();
+
+        async function updateBalances() {
+            var inputBal = await getBalance(currentInputToken);
+            var outputBal = await getBalance(currentOutputToken);
+            $('inputBalance').textContent = inputBal.toFixed(4);
+            $('outputBalance').textContent = outputBal.toFixed(4);
         }
-    }
 
-    document.getElementById('inputAmount').addEventListener('input', updateSwapUI);
-    document.addEventListener('walletConnected', updateSwapUI);
-    document.addEventListener('walletDisconnected', updateSwapUI);
+        async function updateRate() {
+            var price = await fetchSpotPrice();
+            if (price > 0) {
+                $('rateInfo').textContent = '1 ' + currentInputToken + ' ≈ ' + price.toFixed(6) + ' ' + currentOutputToken;
+            } else {
+                $('rateInfo').textContent = '价格获取中...';
+            }
+            var inputAmt = parseFloat($('inputAmount').value) || 0;
+            if (inputAmt > 0 && price > 0) {
+                $('outputAmount').value = (inputAmt * price * 0.995).toFixed(6);
+            } else {
+                $('outputAmount').value = '0.0';
+            }
+            var btn = $('swapButton');
+            if (!window.currentAccount) {
+                btn.textContent = '连接钱包';
+                btn.disabled = true;
+            } else if (inputAmt <= 0) {
+                btn.textContent = '输入金额';
+                btn.disabled = true;
+            } else {
+                btn.textContent = '兑换';
+                btn.disabled = false;
+            }
+        }
 
-    updateBalances();
-    updateSwapUI();
+        window.swapTokens = function() {
+            var temp = currentInputToken;
+            currentInputToken = currentOutputToken;
+            currentOutputToken = temp;
+            $('inputTokenBtn').textContent = currentInputToken + ' ▼';
+            $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
+            $('inputAmount').value = '';
+            $('outputAmount').value = '0.0';
+            updateBalances();
+            updateRate();
+        };
+
+        window.executeSwap = async function() {
+            if (!window.currentAccount) {
+                parent.showToast('请先连接钱包', 'error');
+                return;
+            }
+            var amount = $('inputAmount').value;
+            if (!amount || parseFloat(amount) <= 0) return;
+            var btn = $('swapButton');
+            btn.disabled = true;
+            btn.textContent = '处理中...';
+            try {
+                // 简化版：仅展示 UI 动作，真实交易需调用 Router 合约
+                // 此处模拟成功
+                parent.showToast('兑换成功', 'success');
+                $('inputAmount').value = '';
+                $('outputAmount').value = '0.0';
+                updateBalances();
+            } catch (e) {
+                parent.showToast('交易失败: ' + e.message, 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = '兑换';
+        };
+
+        $('inputAmount').addEventListener('input', updateRate);
+
+        document.addEventListener('walletConnected', function() {
+            updateBalances();
+            updateRate();
+        });
+
+        if (window.web3 && window.currentAccount) {
+            updateBalances();
+            updateRate();
+        } else {
+            setTimeout(function() {
+                if (window.web3 && window.currentAccount) {
+                    updateBalances();
+                    updateRate();
+                }
+            }, 500);
+        }
+    })();
     </script>
 </div>
