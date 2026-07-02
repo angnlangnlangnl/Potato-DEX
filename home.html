@@ -66,14 +66,13 @@
             <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，按回车搜索">
             <button class="search-icon" id="searchIconBtn" title="搜索">🔍</button>
         </div>
-        <div class="slippage">滑点容忍度: 0.5%</div>
         <div class="balance-row">余额: <span id="inputBalance">0.00</span> <span class="max-btn" id="inputMaxBtn">全部</span></div>
 
         <div class="input-row">
             <input type="number" id="inputAmount" placeholder="0.0" step="any">
             <button class="token-select" id="inputTokenBtn">USDT ▼</button>
         </div>
-        <div class="balance-row">余额: <span id="inputBalance">0.00</span> <span class="max-btn" id="inputMaxBtn">全部</span></div>
+        <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
 
         <div class="swap-arrow" onclick="swapTokens()">↓</div>
 
@@ -81,7 +80,7 @@
             <input type="number" id="outputAmount" placeholder="0.0" readonly>
             <button class="token-select" id="outputTokenBtn">BNB ▼</button>
         </div>
-        <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
+        <div class="slippage">滑点容忍度: 0.5%</div>
 
         <button id="swapButton" class="swap-btn" onclick="executeSwap()">连接钱包</button>
         <div class="price-info" id="rateInfo">--</div>
