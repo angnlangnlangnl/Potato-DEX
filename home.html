@@ -28,7 +28,12 @@
 
         .input-row {
             background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
-            padding: 12px 15px; margin-bottom: 8px; display: flex; flex-direction: column;
+            padding: 12px 15px; margin-bottom: 8px;
+            display: flex; flex-direction: column;
+            position: relative;
+        }
+        .input-row.has-balance-top {
+            padding-top: 28px; /* 为右上角的余额留出空间 */
         }
         .input-row .amount-row {
             display: flex; justify-content: space-between; align-items: center;
@@ -46,6 +51,13 @@
         .balance-row {
             display: flex; justify-content: flex-end; align-items: center;
             font-size: 12px; color: #888; margin-top: 4px; padding: 0 2px;
+        }
+        .balance-row.top-right {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            margin-top: 0;
+            padding: 0;
         }
         .max-btn {
             color: #f0b90b; cursor: pointer; margin-left: 4px; text-decoration: none; font-weight: 500;
@@ -72,21 +84,21 @@
             <button class="search-icon" id="searchIconBtn" title="搜索">🔍</button>
         </div>
 
-        <!-- 第一个输入框：USDT -->
-        <div class="input-row">
+        <!-- 第一个输入框：USDT，余额移到右上角 -->
+        <div class="input-row has-balance-top">
+            <div class="balance-row top-right">
+                <span>余额 <span id="inputBalance">0.00</span></span>
+                <span class="max-btn" id="inputMaxBtn">全部</span>
+            </div>
             <div class="amount-row">
                 <input type="number" id="inputAmount" placeholder="0.0" step="any">
                 <button class="token-select" id="inputTokenBtn">USDT ▼</button>
-            </div>
-            <div class="balance-row">
-                <span>余额 <span id="inputBalance">0.00</span></span>
-                <span class="max-btn" id="inputMaxBtn">全部</span>
             </div>
         </div>
 
         <div class="swap-arrow" onclick="swapTokens()">↓</div>
 
-        <!-- 第二个输入框：BNB -->
+        <!-- 第二个输入框：BNB，余额保持在下方 -->
         <div class="input-row">
             <div class="amount-row">
                 <input type="number" id="outputAmount" placeholder="0.0" readonly>
@@ -265,331 +277,6 @@
         $('inputMaxBtn').addEventListener('click', function() {
             var bal = parseFloat($('inputBalance').textContent) || 0;
             if (bal > 0) { $('inputAmount').value = bal; updateRate(); }
-        });
-
-        window.swapTokens = function() {
-            var temp = currentInputToken;
-            currentInputToken = currentOutputToken;
-            currentOutputToken = temp;
-            $('inputTokenBtn').textContent = currentInputToken + ' ▼';
-            $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
-            $('inputAmount').value = '';
-            $('outputAmount').value = '0.0';
-            updateBalances();
-            updateRate();
-        };
-
-        window.executeSwap = async function() {
-            if (!window.currentAccount) {
-                parent.showToast('请先连接钱包', 'error');
-                return;
-            }
-            var amount = $('inputAmount').value;
-            if (!amount || parseFloat(amount) <= 0) return;
-            var btn = $('swapButton');
-            btn.disabled = true;
-            btn.textContent = '处理中...';
-            try {
-                parent.showToast('兑换成功', 'success');
-                $('inputAmount').value = '';
-                $('outputAmount').value = '0.0';
-                updateBalances();
-            } catch (e) {
-                parent.showToast('交易失败: ' + e.message, 'error');
-            }
-            btn.disabled = false;
-            btn.textContent = '兑换';
-        };
-
-        $('inputAmount').addEventListener('input', updateRate);
-
-        document.addEventListener('walletConnected', function() {
-            updateBalances();
-            updateRate();
-        });
-
-        if (window.web3 && window.currentAccount) {
-            updateBalances();
-            updateRate();
-        } else {
-            setTimeout(function() {
-                if (window.web3 && window.currentAccount) {
-                    updateBalances();
-                    updateRate();
-                }
-            }, 500);
-        }
-    })();
-    </script>
-</div><div id="page-trade" class="page-container">
-    <style>
-        .glass-card { 
-            background: rgba(18,22,40,0.7); 
-            backdrop-filter: blur(16px); 
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px; 
-            padding: 20px; 
-            margin-bottom: 15px; 
-            color: #ccd6f0; 
-        }
-        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #f0b90b; }
-        
-        /* 搜索框 + 内部图标 */
-        .search-wrapper { position: relative; margin-bottom: 14px; }
-        .token-search {
-            width: 100%; padding: 10px 40px 10px 14px; background: #0d1125; border: 1px solid #2d325a;
-            border-radius: 12px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;
-        }
-        .token-search::placeholder { color: #6b7394; }
-        .token-search:focus { border-color: #4ecca3; }
-        .search-icon {
-            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-            background: none; border: none; color: #6b7394; cursor: pointer; font-size: 18px;
-            padding: 4px; display: flex; align-items: center; justify-content: center;
-        }
-        .search-icon:active { color: #4ecca3; }
-
-        .input-row {
-            background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
-            padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .input-row input {
-            background: transparent; border: none; color: #fff; font-size: 20px;
-            width: 60%; outline: none; -moz-appearance: textfield;
-        }
-        .input-row input::-webkit-outer-spin-button,
-        .input-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .token-select {
-            background: #2d325a; border: none; color: #fff; padding: 8px 14px;
-            border-radius: 20px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;
-        }
-        .balance-row { text-align: right; font-size: 12px; color: #888; padding: 0 10px; margin-bottom: 8px; }
-        .max-btn {
-            color: #f0b90b; cursor: pointer; margin-left: 4px; text-decoration: none; font-weight: 500;
-        }
-        .swap-arrow {
-            width: 40px; height: 40px; background: #1e2a4a; border: 2px solid #2d325a;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            margin: -10px auto; position: relative; z-index: 2; cursor: pointer; color: #f0b90b; font-size: 18px;
-        }
-        .swap-btn {
-            width: 100%; padding: 14px; border: none; border-radius: 16px;
-            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s;
-            background: #f0b90b; color: #0b0f1a;
-        }
-        .swap-btn:disabled { background: #2d325a; color: #666; cursor: not-allowed; }
-        .price-info { font-size: 13px; color: #888; text-align: center; margin-top: 12px; }
-        .slippage { display: flex; justify-content: flex-end; margin-bottom: 10px; font-size: 12px; color: #888; }
-    </style>
-
-    <div class="glass-card">
-        <div class="swap-title">🔄 兑换</div>
-        <div class="search-wrapper">
-            <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，按回车搜索">
-            <button class="search-icon" id="searchIconBtn" title="搜索">🔍</button>
-        </div>
-        <div class="slippage">滑点容忍度: 0.5%</div>
-
-        <div class="input-row">
-            <input type="number" id="inputAmount" placeholder="0.0" step="any">
-            <button class="token-select" id="inputTokenBtn">USDT ▼</button>
-        </div>
-        <div class="balance-row">余额: <span id="inputBalance">0.00</span> <span class="max-btn" id="inputMaxBtn">全部</span></div>
-
-        <div class="swap-arrow" onclick="swapTokens()">↓</div>
-
-        <div class="input-row">
-            <input type="number" id="outputAmount" placeholder="0.0" readonly>
-            <button class="token-select" id="outputTokenBtn">BNB ▼</button>
-        </div>
-        <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
-
-        <button id="swapButton" class="swap-btn" onclick="executeSwap()">连接钱包</button>
-        <div class="price-info" id="rateInfo">--</div>
-    </div>
-
-    <script>
-    (function() {
-        var TOKEN_ADDRESSES = {
-            'USDT': '0x55d398326f99059fF775485246999027B3197955',
-            'MYK': '0xc23CfEeC6D188D627C85106f682D9eb38d94192a',
-            'BNB': null,
-            'BUSD': '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
-            'WBNB': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
-            'CAKE': '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
-            'ETH': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
-            'BTCB': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c'
-        };
-        var ERC20_ABI = [
-            {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
-            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"type":"function"},
-            {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
-            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"}
-        ];
-        var FACTORY_ABI = [{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"getPair","outputs":[{"name":"","type":"address"}],"type":"function"}];
-
-        var currentInputToken = 'USDT';
-        var currentOutputToken = 'BNB';
-        var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
-        var FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73';
-        var WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
-
-        function $(id) { return document.getElementById(id); }
-        function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
-
-        async function getTokenAddress(symbol) {
-            return TOKEN_ADDRESSES[symbol] || null;
-        }
-
-        async function getBalance(tokenSymbol) {
-            if (!window.web3 || !window.currentAccount) return 0;
-            var addr = await getTokenAddress(tokenSymbol);
-            if (!addr) {
-                var balWei = await web3.eth.getBalance(window.currentAccount);
-                return n(balWei);
-            }
-            var contract = new web3.eth.Contract(ERC20_ABI, addr);
-            var decimals = await contract.methods.decimals().call();
-            var bal = await contract.methods.balanceOf(window.currentAccount).call();
-            return parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
-        }
-
-        async function fetchSpotPrice() {
-            if (!web3) return 0;
-            try {
-                var inputAddr = (await getTokenAddress(currentInputToken)) || WBNB;
-                var outputAddr = (await getTokenAddress(currentOutputToken)) || WBNB;
-                if (inputAddr === outputAddr) return 1;
-                var path = [inputAddr, outputAddr];
-                var routerContract = new web3.eth.Contract([{"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}], ROUTER);
-                var amounts = await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), path).call();
-                return n(amounts[1]);
-            } catch (e) {
-                return 0;
-            }
-        }
-
-        async function updateBalances() {
-            var inputBal = await getBalance(currentInputToken);
-            var outputBal = await getBalance(currentOutputToken);
-            $('inputBalance').textContent = inputBal.toFixed(4);
-            $('outputBalance').textContent = outputBal.toFixed(4);
-        }
-
-        async function updateRate() {
-            var price = await fetchSpotPrice();
-            if (price > 0) {
-                $('rateInfo').textContent = '1 ' + currentInputToken + ' ≈ ' + price.toFixed(6) + ' ' + currentOutputToken;
-            } else {
-                $('rateInfo').textContent = '价格获取中...';
-            }
-            var inputAmt = parseFloat($('inputAmount').value) || 0;
-            if (inputAmt > 0 && price > 0) {
-                $('outputAmount').value = (inputAmt * price * 0.995).toFixed(6);
-            } else {
-                $('outputAmount').value = '0.0';
-            }
-            var btn = $('swapButton');
-            if (!window.currentAccount) {
-                btn.textContent = '连接钱包';
-                btn.disabled = true;
-            } else if (inputAmt <= 0) {
-                btn.textContent = '输入金额';
-                btn.disabled = true;
-            } else {
-                btn.textContent = '兑换';
-                btn.disabled = false;
-            }
-        }
-
-        // ====== 搜索功能 ======
-        async function searchToken() {
-            var searchInput = $('tokenSearch');
-            var query = searchInput.value.trim();
-            if (!query) return;
-            if (!web3) {
-                parent.showToast('钱包未连接', 'error');
-                return;
-            }
-
-            var tokenAddress = null;
-            var upperQuery = query.toUpperCase();
-            if (TOKEN_ADDRESSES[upperQuery] !== undefined) {
-                tokenAddress = TOKEN_ADDRESSES[upperQuery];
-                if (tokenAddress === null) {
-                    tokenAddress = WBNB;
-                }
-            } else if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
-                tokenAddress = query;
-            } else {
-                parent.showToast('无效的合约地址', 'error');
-                return;
-            }
-
-            try {
-                var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
-                var symbol = await tokenContract.methods.symbol().call();
-                var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
-
-                // 优先 WBNB 配对
-                var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
-                if (pair !== '0x0000000000000000000000000000000000000000') {
-                    TOKEN_ADDRESSES[symbol] = tokenAddress;
-                    currentInputToken = symbol;
-                    currentOutputToken = 'BNB';
-                    TOKEN_ADDRESSES['BNB'] = null;
-                    $('inputTokenBtn').textContent = symbol + ' ▼';
-                    $('outputTokenBtn').textContent = 'BNB ▼';
-                } else {
-                    // 尝试 USDT 配对
-                    var usdtAddr = TOKEN_ADDRESSES['USDT'];
-                    pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
-                    if (pair !== '0x0000000000000000000000000000000000000000') {
-                        TOKEN_ADDRESSES[symbol] = tokenAddress;
-                        currentInputToken = symbol;
-                        currentOutputToken = 'USDT';
-                        $('inputTokenBtn').textContent = symbol + ' ▼';
-                        $('outputTokenBtn').textContent = 'USDT ▼';
-                    } else {
-                        parent.showToast('未找到该代币的交易对 (BNB/USDT)', 'error');
-                        return;
-                    }
-                }
-
-                $('inputAmount').value = '';
-                $('outputAmount').value = '0.0';
-                updateBalances();
-                updateRate();
-                searchInput.value = '';
-                parent.showToast('已加载 ' + currentInputToken + '/' + currentOutputToken + ' 交易对', 'success');
-            } catch (e) {
-                console.error(e);
-                parent.showToast('代币信息获取失败，请检查地址', 'error');
-            }
-        }
-
-        // 回车事件
-        $('tokenSearch').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                searchToken();
-            }
-        });
-
-        // 搜索图标点击事件
-        $('searchIconBtn').addEventListener('click', function() {
-            searchToken();
-        });
-
-        // ====== 全部余额点击事件 ======
-        $('inputMaxBtn').addEventListener('click', function() {
-            var balText = $('inputBalance').textContent;
-            var bal = parseFloat(balText) || 0;
-            if (bal > 0) {
-                $('inputAmount').value = bal;
-                updateRate();
-            }
         });
 
         window.swapTokens = function() {
