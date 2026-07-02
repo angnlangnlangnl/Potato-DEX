@@ -42,6 +42,9 @@
             border-radius: 20px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;
         }
         .balance-row { text-align: right; font-size: 12px; color: #888; padding: 0 10px; margin-bottom: 8px; }
+        .max-btn {
+            color: #f0b90b; cursor: pointer; margin-left: 4px; text-decoration: none; font-weight: 500;
+        }
         .swap-arrow {
             width: 40px; height: 40px; background: #1e2a4a; border: 2px solid #2d325a;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -69,7 +72,7 @@
             <input type="number" id="inputAmount" placeholder="0.0" step="any">
             <button class="token-select" id="inputTokenBtn">USDT ▼</button>
         </div>
-        <div class="balance-row">余额: <span id="inputBalance">0.00</span></div>
+        <div class="balance-row">余额: <span id="inputBalance">0.00</span> <span class="max-btn" id="inputMaxBtn">全部</span></div>
 
         <div class="swap-arrow" onclick="swapTokens()">↓</div>
 
@@ -177,7 +180,7 @@
             }
         }
 
-        // ====== 搜索功能：自动查找 PancakeSwap 交易对 ======
+        // ====== 搜索功能 ======
         async function searchToken() {
             var searchInput = $('tokenSearch');
             var query = searchInput.value.trim();
@@ -206,7 +209,7 @@
                 var symbol = await tokenContract.methods.symbol().call();
                 var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
 
-                // 优先尝试与 WBNB 配对
+                // 优先 WBNB 配对
                 var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
                 if (pair !== '0x0000000000000000000000000000000000000000') {
                     TOKEN_ADDRESSES[symbol] = tokenAddress;
@@ -216,7 +219,7 @@
                     $('inputTokenBtn').textContent = symbol + ' ▼';
                     $('outputTokenBtn').textContent = 'BNB ▼';
                 } else {
-                    // 尝试与 USDT 配对
+                    // 尝试 USDT 配对
                     var usdtAddr = TOKEN_ADDRESSES['USDT'];
                     pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
                     if (pair !== '0x0000000000000000000000000000000000000000') {
@@ -254,6 +257,16 @@
         // 搜索图标点击事件
         $('searchIconBtn').addEventListener('click', function() {
             searchToken();
+        });
+
+        // ====== 全部余额点击事件 ======
+        $('inputMaxBtn').addEventListener('click', function() {
+            var balText = $('inputBalance').textContent;
+            var bal = parseFloat(balText) || 0;
+            if (bal > 0) {
+                $('inputAmount').value = bal;
+                updateRate();
+            }
         });
 
         window.swapTokens = function() {
