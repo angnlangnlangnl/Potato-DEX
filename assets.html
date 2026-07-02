@@ -58,7 +58,7 @@
         .placeholder-text { text-align: center; padding: 30px; color: #a3adc9; }
     </style>
 
-    <!-- 总资产卡片（独立显示） -->
+    <!-- 总资产卡片 -->
     <div class="glass-card">
         <div class="flex-row">
             <div>
@@ -85,16 +85,28 @@
 
     <script>
     (function() {
-        var TOKENS = [
-            { symbol: 'BNB', address: null, decimals: 18, iconColor: '#F0B90B', iconText: 'B', isNative: true },
-            { symbol: 'USDT', address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18, iconColor: '#26a17b', iconText: 'USDT', isNative: false },
-            { symbol: 'USDC', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18, iconColor: '#2775ca', iconText: 'USDC', isNative: false },
-            { symbol: 'BUSD', address: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', decimals: 18, iconColor: '#F0B90B', iconText: 'BUSD', isNative: false },
-            { symbol: 'MYK',  address: '0xc23CfEeC6D188D627C85106f682D9eb38d94192a', decimals: 18, iconColor: '#3f51b5', iconText: 'M', isNative: false },
-            { symbol: 'WBNB', address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', decimals: 18, iconColor: '#F0B90B', iconText: 'WBNB', isNative: false },
-            { symbol: 'CAKE', address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', decimals: 18, iconColor: '#D1884F', iconText: 'C', isNative: false },
-            { symbol: 'ETH',  address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', decimals: 18, iconColor: '#627eea', iconText: '♦', isNative: false },
-            { symbol: 'BTCB', address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', decimals: 18, iconColor: '#f7931a', iconText: '₿', isNative: false }
+        // 必须默认显示的代币
+        var DEFAULT_TOKENS = ['BNB', 'USDT', 'BTCB', 'ETH'];
+        
+        // 其他可能持有的代币（将动态扫描余额）
+        var OTHER_TOKENS = ['USDC', 'BUSD', 'MYK', 'WBNB', 'CAKE'];
+        
+        // 所有代币的配置信息
+        var TOKEN_CONFIG = {
+            'BNB':  { address: null, decimals: 18, iconColor: '#F0B90B', iconText: 'B', isNative: true },
+            'USDT': { address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18, iconColor: '#26a17b', iconText: 'USDT', isNative: false },
+            'BTCB': { address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', decimals: 18, iconColor: '#f7931a', iconText: '₿', isNative: false },
+            'ETH':  { address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', decimals: 18, iconColor: '#627eea', iconText: '♦', isNative: false },
+            'USDC': { address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18, iconColor: '#2775ca', iconText: 'USDC', isNative: false },
+            'BUSD': { address: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', decimals: 18, iconColor: '#F0B90B', iconText: 'BUSD', isNative: false },
+            'MYK':  { address: '0xc23CfEeC6D188D627C85106f682D9eb38d94192a', decimals: 18, iconColor: '#3f51b5', iconText: 'M', isNative: false },
+            'WBNB': { address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', decimals: 18, iconColor: '#F0B90B', iconText: 'WBNB', isNative: false },
+            'CAKE': { address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', decimals: 18, iconColor: '#D1884F', iconText: 'C', isNative: false }
+        };
+
+        var ERC20_ABI = [
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
         ];
 
         var priceCache = {};
@@ -111,28 +123,30 @@
             return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        async function getTokenBalance(token) {
+        async function getTokenBalance(symbol) {
             if (!window.web3 || !window.currentAccount) return 0;
+            var config = TOKEN_CONFIG[symbol];
+            if (!config) return 0;
             var account = window.currentAccount;
             try {
-                if (token.isNative) {
+                if (config.isNative) {
                     var balanceWei = await window.web3.eth.getBalance(account);
                     return parseFloat(window.web3.utils.fromWei(balanceWei, 'ether'));
                 } else {
-                    var abi = [{ "constant": true, "inputs": [{ "name": "_owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "balance", "type": "uint256" }], "type": "function" }];
-                    var contract = new window.web3.eth.Contract(abi, token.address);
-                    var balance = await contract.methods.balanceOf(account).call();
-                    return parseFloat(window.web3.utils.fromWei(balance, 'ether')) / Math.pow(10, 18 - token.decimals);
+                    var contract = new window.web3.eth.Contract(ERC20_ABI, config.address);
+                    var decimals = await contract.methods.decimals().call();
+                    var bal = await contract.methods.balanceOf(account).call();
+                    return parseFloat(window.web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
                 }
             } catch (e) {
-                console.error('获取' + token.symbol + '余额失败:', e);
+                console.error('获取' + symbol + '余额失败:', e);
                 return 0;
             }
         }
 
         async function fetchPrices() {
             try {
-                var symbols = ['BNBUSDT', 'USDTUSDT', 'USDCUSDT', 'BUSDUSDT', 'CAKEUSDT', 'ETHUSDT', 'BTCBUSDT'];
+                var symbols = ['BNBUSDT', 'USDTUSDT', 'BTCBUSDT', 'ETHUSDT', 'USDCUSDT', 'BUSDUSDT', 'CAKEUSDT'];
                 var responses = await Promise.all(symbols.map(s => 
                     fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + s).then(r => r.json())
                 ));
@@ -142,13 +156,14 @@
                     }
                 });
                 priceCache['WBNB'] = priceCache['BNB'];
-                priceCache['MYK'] = 0.00647; // 可替换为PancakeSwap实时价格
+                // MYK 价格暂用固定值，也可以从 PancakeSwap 获取
+                priceCache['MYK'] = 0.00647;
             } catch (e) {
                 console.error('价格获取失败', e);
                 // 回退价格
                 priceCache = {
-                    BNB: 540, USDT: 1, USDC: 1, BUSD: 1, MYK: 0.0065,
-                    WBNB: 540, CAKE: 2.5, ETH: 3200, BTCB: 58000
+                    BNB: 540, USDT: 1, BTCB: 58000, ETH: 3200, USDC: 1, BUSD: 1,
+                    MYK: 0.0065, WBNB: 540, CAKE: 2.5
                 };
             }
         }
@@ -167,50 +182,70 @@
                 return;
             }
 
-            // 后台无感知加载：不显示任何加载提示，直接获取数据后更新DOM
             await fetchPrices();
+
+            // 收集所有要显示的代币及其余额
+            var assetList = [];
             
-            var totalValue = 0;
-            var assetsHtml = '';
-
-            for (var i = 0; i < TOKENS.length; i++) {
-                var token = TOKENS[i];
-                var balance = await getTokenBalance(token);
-                var price = getTokenPrice(token.symbol);
+            // 1. 先加入四个默认代币（始终显示）
+            for (var i = 0; i < DEFAULT_TOKENS.length; i++) {
+                var symbol = DEFAULT_TOKENS[i];
+                var balance = await getTokenBalance(symbol);
+                var price = getTokenPrice(symbol);
                 var value = balance * price;
-                totalValue += value;
+                assetList.push({ symbol: symbol, balance: balance, price: price, value: value });
+            }
+            
+            // 2. 扫描其他代币，余额大于0的才加入
+            for (var j = 0; j < OTHER_TOKENS.length; j++) {
+                var otherSymbol = OTHER_TOKENS[j];
+                var bal = await getTokenBalance(otherSymbol);
+                if (bal > 0) {
+                    var pr = getTokenPrice(otherSymbol);
+                    var val = bal * pr;
+                    assetList.push({ symbol: otherSymbol, balance: bal, price: pr, value: val });
+                }
+            }
 
-                if (balance === 0 && token.symbol !== 'BNB') continue;
+            // 3. 按价值从高到低排序
+            assetList.sort(function(a, b) { return b.value - a.value; });
 
-                var bscBadge = (token.symbol === 'USDT' || token.symbol === 'USDC' || token.symbol === 'BUSD') ? 
+            // 4. 渲染列表
+            var totalValue = 0;
+            var html = '';
+
+            for (var k = 0; k < assetList.length; k++) {
+                var asset = assetList[k];
+                totalValue += asset.value;
+                var config = TOKEN_CONFIG[asset.symbol];
+                var bscBadge = (asset.symbol === 'USDT' || asset.symbol === 'USDC' || asset.symbol === 'BUSD') ? 
                     '<div class="wa-network-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44"><path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/><path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/></svg></div>' : '';
 
-                assetsHtml += 
+                html += 
                     '<div class="wa-asset-item">' +
                         '<div class="wa-asset-left">' +
                             '<div class="wa-token-icon-wrapper">' +
-                                '<div class="wa-token-icon" style="background-color:' + token.iconColor + ';">' + token.iconText + '</div>' +
+                                '<div class="wa-token-icon" style="background-color:' + config.iconColor + ';">' + config.iconText + '</div>' +
                                 bscBadge +
                             '</div>' +
                             '<div class="wa-token-info">' +
-                                '<div class="wa-token-name">' + token.symbol + '</div>' +
+                                '<div class="wa-token-name">' + asset.symbol + '</div>' +
                                 '<div class="wa-token-price-wrap">' +
-                                    '<span class="wa-token-price">' + formatUSD(price) + '</span>' +
+                                    '<span class="wa-token-price">' + formatUSD(asset.price) + '</span>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
                         '<div class="wa-asset-right">' +
-                            '<div class="wa-asset-balance">' + formatBalance(balance, token.decimals) + '</div>' +
-                            '<div class="wa-asset-value">' + formatUSD(value) + '</div>' +
+                            '<div class="wa-asset-balance">' + formatBalance(asset.balance, config.decimals) + '</div>' +
+                            '<div class="wa-asset-value">' + formatUSD(asset.value) + '</div>' +
                         '</div>' +
                     '</div>';
             }
 
-            container.innerHTML = assetsHtml || '<div class="placeholder-text">暂无资产</div>';
+            container.innerHTML = html || '<div class="placeholder-text">暂无资产</div>';
             document.getElementById('totalAssetValue').textContent = formatUSD(totalValue);
         }
 
-        // 监听钱包连接事件
         document.addEventListener('walletConnected', function() {
             refreshAssets();
         });
@@ -220,7 +255,6 @@
             if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
         });
 
-        // 初始状态：如果已连接则直接刷新，否则显示等待连接（但不显示加载中）
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function() {
@@ -243,7 +277,6 @@
             }, 500);
         }
 
-        // 每30秒静默刷新一次
         setInterval(function() {
             if (window.currentAccount) {
                 refreshAssets();
