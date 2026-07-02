@@ -1,12 +1,22 @@
-<div id="page-trade" class="page-container">
+<div id="page-home" class="page-container">
     <style>
-        .trade-container { padding: 10px 0; display: flex; flex-direction: column; gap: 20px; }
-        .swap-card {
-            background: rgba(18, 22, 40, 0.8); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px; padding: 20px; backdrop-filter: blur(16px);
+        .swap-container { padding: 20px 0; }
+        .search-bar {
+            background: rgba(18,22,40,0.8); border: 1px solid #2d325a;
+            border-radius: 12px; padding: 12px 16px; margin-bottom: 15px;
+            display: flex; align-items: center; gap: 10px;
         }
-        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #f0b90b; display: flex; align-items: center; gap: 8px; }
-        .swap-title .icon { font-size: 20px; }
+        .search-bar input {
+            flex: 1; background: transparent; border: none;
+            color: #fff; font-size: 15px; outline: none;
+        }
+        .search-bar input::placeholder { color: #666; }
+        .search-bar .search-icon { color: #888; font-size: 18px; }
+        .swap-card {
+            background: rgba(18,22,40,0.8); border: 1px solid #2d325a;
+            border-radius: 20px; padding: 20px;
+        }
+        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #f0b90b; }
         .token-input {
             background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
             padding: 12px 15px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;
@@ -36,171 +46,151 @@
         .price-info { font-size: 12px; color: #888; margin-top: 10px; text-align: center; }
     </style>
 
-    <div class="trade-container">
-        <!-- 第一个买卖卡片 -->
-        <div class="swap-card" id="swapCard1">
-            <div class="swap-title"><span class="icon">🔄</span> 兑换代币 #1</div>
+    <div class="swap-container">
+        <!-- 新增代币搜索栏 -->
+        <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="tokenSearch" placeholder="输入代币名称或合约地址" autocomplete="off">
+        </div>
+
+        <div class="swap-card">
+            <div class="swap-title">🔄 兑换代币</div>
             <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
                 <span style="font-size:12px;color:#888;">滑点 0.5%</span>
             </div>
+            
             <div class="token-input">
-                <input type="number" class="input-amount" placeholder="0.0" step="any">
-                <button class="token-select input-token-btn">
-                    <span class="input-token-symbol">POTATO</span> ▼
+                <input type="number" id="inputAmount" placeholder="0.0" step="any">
+                <button class="token-select" onclick="selectToken('input')">
+                    <span id="inputToken">POTATO</span> ▼
                 </button>
             </div>
             <div style="text-align:right;padding-right:10px;">
-                <span class="token-balance">余额: <span class="input-balance">0.00</span></span>
+                <span class="token-balance">余额: <span id="inputBalance">0.00</span></span>
             </div>
 
-            <div class="swap-arrow swap-reverse">↓</div>
+            <div class="swap-arrow" onclick="swapTokens()">↓</div>
 
             <div class="token-input">
-                <input type="number" class="output-amount" placeholder="0.0" readonly>
-                <button class="token-select output-token-btn">
-                    <span class="output-token-symbol">ETH</span> ▼
+                <input type="number" id="outputAmount" placeholder="0.0" readonly>
+                <button class="token-select" onclick="selectToken('output')">
+                    <span id="outputToken">ETH</span> ▼
                 </button>
             </div>
             <div style="text-align:right;padding-right:10px;">
-                <span class="token-balance">余额: <span class="output-balance">0.00</span></span>
+                <span class="token-balance">余额: <span id="outputBalance">0.00</span></span>
             </div>
 
-            <button class="swap-btn disabled execute-swap">连接钱包</button>
-            <div class="price-info">1 <span class="rate-input-symbol">POTATO</span> = <span class="exchange-rate">--</span> <span class="rate-output-symbol">ETH</span></div>
+            <button id="swapButton" class="swap-btn disabled" onclick="executeSwap()">连接钱包</button>
+            <div class="price-info">1 POTATO = <span id="exchangeRate">--</span> ETH</div>
         </div>
-
-       
+    </div>
 
     <script>
-    (function() {
-        // 模拟代币数据（每个卡片独立管理状态）
-        function createSwapState(cardElement) {
-            var tokenPrices = {
-                'POTATO': { price: 0.0001, balance: 10000 },
-                'ETH': { price: 3000, balance: 1.5 },
-                'USDT': { price: 1, balance: 5000 },
-                'LAND': { price: 50, balance: 100 }
-            };
-            var currentInput = 'POTATO';
-            var currentOutput = 'ETH';
+    var tokenPrices = {
+        'POTATO': { price: 0.0001, balance: 10000 },
+        'ETH': { price: 3000, balance: 1.5 },
+        'USDT': { price: 1, balance: 5000 },
+        'LAND': { price: 50, balance: 100 }
+    };
+    var currentInputToken = 'POTATO';
+    var currentOutputToken = 'ETH';
 
-            var elements = {
-                inputAmount: cardElement.querySelector('.input-amount'),
-                outputAmount: cardElement.querySelector('.output-amount'),
-                inputTokenBtn: cardElement.querySelector('.input-token-btn'),
-                outputTokenBtn: cardElement.querySelector('.output-token-btn'),
-                inputTokenSymbol: cardElement.querySelector('.input-token-symbol'),
-                outputTokenSymbol: cardElement.querySelector('.output-token-symbol'),
-                inputBalance: cardElement.querySelector('.input-balance'),
-                outputBalance: cardElement.querySelector('.output-balance'),
-                swapBtn: cardElement.querySelector('.execute-swap'),
-                exchangeRate: cardElement.querySelector('.exchange-rate'),
-                rateInputSymbol: cardElement.querySelector('.rate-input-symbol'),
-                rateOutputSymbol: cardElement.querySelector('.rate-output-symbol'),
-                reverseBtn: cardElement.querySelector('.swap-reverse')
-            };
-
-            function getRate() {
-                if (currentInput === currentOutput) return 1;
-                var ip = tokenPrices[currentInput]?.price || 0;
-                var op = tokenPrices[currentOutput]?.price || 0;
-                return op > 0 ? ip / op : 0;
-            }
-
-            function updateUI() {
-                var inputAmt = parseFloat(elements.inputAmount.value) || 0;
-                var rate = getRate();
-                elements.exchangeRate.textContent = rate.toFixed(6);
-                elements.rateInputSymbol.textContent = currentInput;
-                elements.rateOutputSymbol.textContent = currentOutput;
-                if (inputAmt > 0 && rate > 0) {
-                    elements.outputAmount.value = (inputAmt * rate * 0.995).toFixed(6);
-                } else {
-                    elements.outputAmount.value = '0.0';
-                }
-                elements.inputBalance.textContent = (tokenPrices[currentInput]?.balance || 0).toFixed(2);
-                elements.outputBalance.textContent = (tokenPrices[currentOutput]?.balance || 0).toFixed(2);
-
-                var btn = elements.swapBtn;
-                if (!window.isConnected) {
-                    btn.textContent = '连接钱包';
-                    btn.className = 'swap-btn disabled';
-                } else if (inputAmt <= 0) {
-                    btn.textContent = '输入金额';
-                    btn.className = 'swap-btn disabled';
-                } else if (inputAmt > (tokenPrices[currentInput]?.balance || 0)) {
-                    btn.textContent = '余额不足';
-                    btn.className = 'swap-btn disabled';
-                } else {
-                    btn.textContent = '兑换';
-                    btn.className = 'swap-btn active';
-                }
-            }
-
-            function swapTokens() {
-                var temp = currentInput;
-                currentInput = currentOutput;
-                currentOutput = temp;
-                elements.inputTokenSymbol.textContent = currentInput;
-                elements.outputTokenSymbol.textContent = currentOutput;
-                elements.inputAmount.value = '';
-                elements.outputAmount.value = '0.0';
-                updateUI();
-            }
-
-            elements.reverseBtn.addEventListener('click', swapTokens);
-            elements.inputAmount.addEventListener('input', updateUI);
-
-            elements.inputTokenBtn.addEventListener('click', function() {
-                var tokens = Object.keys(tokenPrices);
-                var selected = prompt('选择代币:\n' + tokens.join(', '), currentInput);
-                if (selected && tokenPrices[selected]) {
-                    currentInput = selected;
-                    elements.inputTokenSymbol.textContent = selected;
-                    elements.inputAmount.value = '';
-                    elements.outputAmount.value = '0.0';
-                    updateUI();
-                }
-            });
-
-            elements.outputTokenBtn.addEventListener('click', function() {
-                var tokens = Object.keys(tokenPrices);
-                var selected = prompt('选择代币:\n' + tokens.join(', '), currentOutput);
-                if (selected && tokenPrices[selected]) {
-                    currentOutput = selected;
-                    elements.outputTokenSymbol.textContent = selected;
-                    elements.inputAmount.value = '';
-                    elements.outputAmount.value = '0.0';
-                    updateUI();
-                }
-            });
-
-            elements.swapBtn.addEventListener('click', function() {
-                if (!window.isConnected) {
-                    window.top?.showToast ? window.top.showToast('请先连接钱包', 'error') : alert('请先连接钱包');
-                    return;
-                }
-                var inputAmt = parseFloat(elements.inputAmount.value) || 0;
-                var outputAmt = parseFloat(elements.outputAmount.value) || 0;
-                if (inputAmt > 0 && outputAmt > 0) {
-                    window.top?.showToast ? window.top.showToast('兑换成功！' + inputAmt + ' ' + currentInput + ' → ' + outputAmt + ' ' + currentOutput, 'success') : alert('兑换成功！');
-                    elements.inputAmount.value = '';
-                    elements.outputAmount.value = '0.0';
-                    updateUI();
-                }
-            });
-
-            document.addEventListener('walletConnected', updateUI);
-            document.addEventListener('walletDisconnected', updateUI);
-
-            updateUI();
+    function updateSwapUI() {
+        var inputAmt = parseFloat(document.getElementById('inputAmount').value) || 0;
+        var rate = getExchangeRate();
+        document.getElementById('exchangeRate').textContent = rate.toFixed(6);
+        if (inputAmt > 0 && rate > 0) {
+            document.getElementById('outputAmount').value = (inputAmt * rate * 0.995).toFixed(6);
+        } else {
+            document.getElementById('outputAmount').value = '0.0';
         }
+        updateBalances();
+        updateSwapButton();
+    }
 
-        // 初始化两个卡片
-        var cards = document.querySelectorAll('.swap-card');
-        cards.forEach(function(card) {
-            createSwapState(card);
-        });
-    })();
+    function getExchangeRate() {
+        if (currentInputToken === currentOutputToken) return 1;
+        var inputPrice = tokenPrices[currentInputToken] ? tokenPrices[currentInputToken].price : 0;
+        var outputPrice = tokenPrices[currentOutputToken] ? tokenPrices[currentOutputToken].price : 0;
+        return outputPrice > 0 ? inputPrice / outputPrice : 0;
+    }
+
+    function updateBalances() {
+        if (tokenPrices[currentInputToken]) {
+            document.getElementById('inputBalance').textContent = tokenPrices[currentInputToken].balance.toFixed(2);
+        }
+        if (tokenPrices[currentOutputToken]) {
+            document.getElementById('outputBalance').textContent = tokenPrices[currentOutputToken].balance.toFixed(2);
+        }
+    }
+
+    function updateSwapButton() {
+        var btn = document.getElementById('swapButton');
+        var inputAmt = parseFloat(document.getElementById('inputAmount').value) || 0;
+        if (!window.isConnected) {
+            btn.textContent = '连接钱包';
+            btn.className = 'swap-btn disabled';
+        } else if (inputAmt <= 0) {
+            btn.textContent = '输入金额';
+            btn.className = 'swap-btn disabled';
+        } else if (inputAmt > (tokenPrices[currentInputToken] ? tokenPrices[currentInputToken].balance : 0)) {
+            btn.textContent = '余额不足';
+            btn.className = 'swap-btn disabled';
+        } else {
+            btn.textContent = '兑换';
+            btn.className = 'swap-btn active';
+        }
+    }
+
+    function swapTokens() {
+        var temp = currentInputToken;
+        currentInputToken = currentOutputToken;
+        currentOutputToken = temp;
+        document.getElementById('inputToken').textContent = currentInputToken;
+        document.getElementById('outputToken').textContent = currentOutputToken;
+        document.getElementById('inputAmount').value = '';
+        document.getElementById('outputAmount').value = '0.0';
+        updateSwapUI();
+    }
+
+    function selectToken(type) {
+        var tokens = Object.keys(tokenPrices);
+        var selected = prompt('选择代币:\n' + tokens.join(', '), type === 'input' ? currentInputToken : currentOutputToken);
+        if (selected && tokenPrices[selected]) {
+            if (type === 'input') {
+                currentInputToken = selected;
+                document.getElementById('inputToken').textContent = selected;
+            } else {
+                currentOutputToken = selected;
+                document.getElementById('outputToken').textContent = selected;
+            }
+            document.getElementById('inputAmount').value = '';
+            document.getElementById('outputAmount').value = '0.0';
+            updateSwapUI();
+        }
+    }
+
+    function executeSwap() {
+        if (!window.isConnected) {
+            window.top.showToast ? window.top.showToast('请先连接钱包', 'error') : alert('请先连接钱包');
+            return;
+        }
+        var inputAmt = parseFloat(document.getElementById('inputAmount').value) || 0;
+        var outputAmt = parseFloat(document.getElementById('outputAmount').value) || 0;
+        if (inputAmt > 0 && outputAmt > 0) {
+            window.top.showToast('兑换成功！' + inputAmt + ' ' + currentInputToken + ' → ' + outputAmt + ' ' + currentOutputToken, 'success');
+            document.getElementById('inputAmount').value = '';
+            document.getElementById('outputAmount').value = '0.0';
+            updateSwapUI();
+        }
+    }
+
+    document.getElementById('inputAmount').addEventListener('input', updateSwapUI);
+    document.addEventListener('walletConnected', updateSwapUI);
+    document.addEventListener('walletDisconnected', updateSwapUI);
+
+    updateBalances();
+    updateSwapUI();
     </script>
 </div>
