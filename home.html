@@ -57,8 +57,22 @@
         .swap-btn:disabled { background: #2d325a; color: #666; cursor: not-allowed; }
         .price-info { font-size: 13px; color: #888; text-align: center; margin-top: 12px; }
         .slippage { display: flex; justify-content: flex-end; margin-bottom: 10px; font-size: 12px; color: #888; }
+
+        /* 交易记录卡片样式 */
+        .recent-trade-card { margin-top: 0; }
+        .trade-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .trade-record-title { font-size: 16px; font-weight: bold; color: #f0b90b; }
+        .trade-record-time { font-size: 12px; color: #888; }
+        .trade-record-content { display: flex; flex-direction: column; gap: 8px; }
+        .trade-record-row { display: flex; justify-content: space-between; font-size: 14px; }
+        .trade-record-label { color: #888; }
+        .trade-record-value { color: #ccd6f0; }
+        .tx-hash { color: #4ecca3; font-size: 12px; text-decoration: none; word-break: break-all; }
+        .tx-hash:hover { text-decoration: underline; }
+        .no-record { text-align: center; color: #888; font-size: 14px; padding: 10px 0; }
     </style>
 
+    <!-- 兑换卡片 -->
     <div class="glass-card">
         <div class="swap-title">兑换</div>
         <div class="search-wrapper">
@@ -83,6 +97,17 @@
         <div class="slippage">滑点容忍度: 0.5%</div>
         <button id="swapButton" class="swap-btn" onclick="executeSwap()">连接钱包</button>
         <div class="price-info" id="rateInfo">--</div>
+    </div>
+
+    <!-- 最近交易记录卡片 -->
+    <div class="glass-card recent-trade-card" id="recentTradeCard" style="display: none;">
+        <div class="trade-record-header">
+            <span class="trade-record-title">📋 最近交易</span>
+            <span class="trade-record-time" id="tradeTime">--</span>
+        </div>
+        <div class="trade-record-content" id="tradeRecordContent">
+            <div class="no-record">暂无交易记录</div>
+        </div>
     </div>
 
     <script>
@@ -131,7 +156,7 @@
             return await contract.methods.decimals().call();
         }
 
-        // 获取代币余额（人类可读）
+        // 获取代币余额
         async function getBalance(tokenSymbol) {
             if (!window.web3 || !window.currentAccount) return 0;
             if (tokenSymbol === 'BNB') {
@@ -146,13 +171,12 @@
             return parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
         }
 
-        // 构建有效兑换路径（自动处理无直接交易对的情况）
+        // 构建路径
         async function buildPath(inputSymbol, outputSymbol) {
             var inputAddr = (inputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[inputSymbol];
             var outputAddr = (outputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[outputSymbol];
             if (!inputAddr || !outputAddr) return null;
             if (inputAddr === outputAddr) return [inputAddr];
-
             try {
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
                 await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, outputAddr]).call();
@@ -166,14 +190,12 @@
                     try {
                         await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, usdtAddr, outputAddr]).call();
                         return [inputAddr, usdtAddr, outputAddr];
-                    } catch (e3) {
-                        return null;
-                    }
+                    } catch (e3) { return null; }
                 }
             }
         }
 
-        // 获取现货价格（基于1个输入代币）
+        // 获取价格
         async function fetchSpotPrice() {
             if (!web3) return 0;
             try {
@@ -182,16 +204,12 @@
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
                 var decimals = await getDecimals(currentInputToken);
                 var oneUnit = web3.utils.toWei('1', 'ether');
-                if (decimals !== 18) {
-                    oneUnit = BigInt(10 ** decimals).toString();
-                }
+                if (decimals !== 18) oneUnit = BigInt(10 ** decimals).toString();
                 var amounts = await routerContract.methods.getAmountsOut(oneUnit, path).call();
                 var outputDecimals = await getDecimals(currentOutputToken);
                 var rawOut = amounts[amounts.length-1];
                 return parseFloat(web3.utils.fromWei(rawOut, 'ether')) / Math.pow(10, 18 - outputDecimals);
-            } catch (e) {
-                return 0;
-            }
+            } catch (e) { return 0; }
         }
 
         async function updateBalances() {
@@ -227,16 +245,12 @@
             }
         }
 
-        // 搜索功能（不变）
+        // 搜索功能
         async function searchToken() {
             var searchInput = $('tokenSearch');
             var query = searchInput.value.trim();
             if (!query) return;
-            if (!web3) {
-                parent.showToast('钱包未连接', 'error');
-                return;
-            }
-
+            if (!web3) { parent.showToast('钱包未连接', 'error'); return; }
             var tokenAddress = null;
             var upperQuery = query.toUpperCase();
             if (TOKEN_ADDRESSES[upperQuery] !== undefined) {
@@ -244,11 +258,7 @@
                 if (tokenAddress === null) tokenAddress = WBNB;
             } else if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
                 tokenAddress = query;
-            } else {
-                parent.showToast('无效的合约地址', 'error');
-                return;
-            }
-
+            } else { parent.showToast('无效的合约地址', 'error'); return; }
             try {
                 var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
                 var symbol = await tokenContract.methods.symbol().call();
@@ -265,10 +275,7 @@
                         TOKEN_ADDRESSES[symbol] = tokenAddress;
                         currentInputToken = symbol;
                         currentOutputToken = 'USDT';
-                    } else {
-                        parent.showToast('未找到该代币的交易对 (BNB/USDT)', 'error');
-                        return;
-                    }
+                    } else { parent.showToast('未找到该代币的交易对 (BNB/USDT)', 'error'); return; }
                 }
                 $('inputTokenBtn').textContent = currentInputToken + ' ▼';
                 $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
@@ -278,16 +285,11 @@
                 updateRate();
                 searchInput.value = '';
                 parent.showToast('已加载 ' + currentInputToken + '/' + currentOutputToken + ' 交易对', 'success');
-            } catch (e) {
-                console.error(e);
-                parent.showToast('代币信息获取失败，请检查地址', 'error');
-            }
+            } catch (e) { console.error(e); parent.showToast('代币信息获取失败，请检查地址', 'error'); }
         }
 
         // 事件绑定
-        $('tokenSearch').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') { e.preventDefault(); searchToken(); }
-        });
+        $('tokenSearch').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); searchToken(); } });
         $('searchIconBtn').addEventListener('click', searchToken);
         $('inputMaxBtn').addEventListener('click', function() {
             var bal = parseFloat($('inputBalance').textContent) || 0;
@@ -306,7 +308,49 @@
             updateRate();
         };
 
-        // ========== 真实链上兑换（已修复 gas 问题） ==========
+        // ========== 交易记录存储和展示 ==========
+        function saveTradeRecord(record) {
+            try {
+                var records = JSON.parse(localStorage.getItem('potato_recent_trades') || '[]');
+                records.unshift(record); // 最新在前
+                if (records.length > 5) records = records.slice(0, 5); // 只保留最近5条
+                localStorage.setItem('potato_recent_trades', JSON.stringify(records));
+            } catch (e) {}
+        }
+
+        function getLatestTradeRecord() {
+            try {
+                var records = JSON.parse(localStorage.getItem('potato_recent_trades') || '[]');
+                return records.length > 0 ? records[0] : null;
+            } catch (e) { return null; }
+        }
+
+        function renderRecentTrade() {
+            var record = getLatestTradeRecord();
+            var card = $('recentTradeCard');
+            var content = $('tradeRecordContent');
+            var timeEl = $('tradeTime');
+            if (!record) {
+                if (card) card.style.display = 'none';
+                return;
+            }
+            if (card) card.style.display = 'block';
+            if (timeEl) timeEl.textContent = record.time;
+            if (content) {
+                var txHashDisplay = record.txHash ? 
+                    '<div class="trade-record-row"><span class="trade-record-label">交易哈希</span><a class="tx-hash" href="https://bscscan.com/tx/' + record.txHash + '" target="_blank">' + record.txHash.substring(0, 10) + '...' + record.txHash.substring(record.txHash.length - 8) + '</a></div>' : '';
+                content.innerHTML = 
+                    '<div class="trade-record-row"><span class="trade-record-label">交易对</span><span class="trade-record-value">' + record.inputToken + ' → ' + record.outputToken + '</span></div>' +
+                    '<div class="trade-record-row"><span class="trade-record-label">输入</span><span class="trade-record-value">' + record.inputAmount + ' ' + record.inputToken + '</span></div>' +
+                    '<div class="trade-record-row"><span class="trade-record-label">输出</span><span class="trade-record-value">' + record.outputAmount + ' ' + record.outputToken + '</span></div>' +
+                    txHashDisplay;
+            }
+        }
+
+        // 初始化时渲染交易记录
+        renderRecentTrade();
+
+        // ========== 真实兑换（包含交易记录保存） ==========
         window.executeSwap = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -326,7 +370,6 @@
                 var inputDecimals = await getDecimals(currentInputToken);
                 var outputDecimals = await getDecimals(currentOutputToken);
 
-                // 转换数量为最小单位
                 var amountInWei;
                 if (inputDecimals === 18) {
                     amountInWei = web3.utils.toWei(amount, 'ether');
@@ -334,22 +377,16 @@
                     amountInWei = BigInt(Math.floor(parseFloat(amount) * (10 ** inputDecimals))).toString();
                 }
 
-                // 构建路径
                 var path = await buildPath(currentInputToken, currentOutputToken);
                 if (!path) {
                     parent.showToast('无有效兑换路径', 'error');
-                    btn.disabled = false;
-                    btn.textContent = '兑换';
-                    return;
+                    btn.disabled = false; btn.textContent = '兑换'; return;
                 }
 
-                // 计算最小输出（滑点0.5%）
                 var price = await fetchSpotPrice();
                 if (price <= 0) {
                     parent.showToast('无法获取价格', 'error');
-                    btn.disabled = false;
-                    btn.textContent = '兑换';
-                    return;
+                    btn.disabled = false; btn.textContent = '兑换'; return;
                 }
                 var expectedOut = parseFloat(amount) * price;
                 var amountOutMin = expectedOut * 0.995;
@@ -362,47 +399,47 @@
 
                 var deadline = Math.floor(Date.now()/1000) + 600;
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
-                var gasEstimate;
+                var tx;
 
                 if (currentInputToken === 'BNB') {
-                    // BNB -> Token
                     btn.textContent = '等待确认...';
-                    var txObj = routerContract.methods.swapExactETHForTokens(
+                    tx = await routerContract.methods.swapExactETHForTokens(
                         amountOutMinWei, path, account, deadline
-                    );
-                    gasEstimate = await txObj.estimateGas({ from: account, value: amountInWei });
-                    await txObj.send({ from: account, value: amountInWei, gas: Math.floor(gasEstimate * 1.2) });
+                    ).send({ from: account, value: amountInWei });
                 } else {
-                    // 授权检查
                     var tokenAddr = TOKEN_ADDRESSES[currentInputToken];
                     var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
                     var allowance = await tokenContract.methods.allowance(account, ROUTER).call();
                     if (BigInt(allowance) < BigInt(amountInWei)) {
                         btn.textContent = '授权中...';
                         parent.showToast('需要授权，请确认', 'info');
-                        var approveTx = tokenContract.methods.approve(ROUTER, MAX_UINT256);
-                        var approveGas = await approveTx.estimateGas({ from: account });
-                        await approveTx.send({ from: account, gas: Math.floor(approveGas * 1.2) });
+                        await tokenContract.methods.approve(ROUTER, MAX_UINT256).send({ from: account });
                         parent.showToast('授权成功，继续兑换', 'success');
                         btn.textContent = '正在兑换...';
                     }
 
                     if (currentOutputToken === 'BNB') {
-                        // Token -> BNB
-                        var txObj2 = routerContract.methods.swapExactTokensForETH(
+                        tx = await routerContract.methods.swapExactTokensForETH(
                             amountInWei, amountOutMinWei, path, account, deadline
-                        );
-                        gasEstimate = await txObj2.estimateGas({ from: account });
-                        await txObj2.send({ from: account, gas: Math.floor(gasEstimate * 1.2) });
+                        ).send({ from: account });
                     } else {
-                        // Token -> Token
-                        var txObj3 = routerContract.methods.swapExactTokensForTokens(
+                        tx = await routerContract.methods.swapExactTokensForTokens(
                             amountInWei, amountOutMinWei, path, account, deadline
-                        );
-                        gasEstimate = await txObj3.estimateGas({ from: account });
-                        await txObj3.send({ from: account, gas: Math.floor(gasEstimate * 1.2) });
+                        ).send({ from: account });
                     }
                 }
+
+                // 保存交易记录
+                var record = {
+                    time: new Date().toLocaleString(),
+                    inputToken: currentInputToken,
+                    outputToken: currentOutputToken,
+                    inputAmount: amount,
+                    outputAmount: expectedOut.toFixed(6),
+                    txHash: tx.transactionHash
+                };
+                saveTradeRecord(record);
+                renderRecentTrade();
 
                 parent.showToast('兑换成功！', 'success');
                 $('inputAmount').value = '';
@@ -428,6 +465,7 @@
         document.addEventListener('walletConnected', function() {
             updateBalances();
             updateRate();
+            renderRecentTrade();
         });
 
         if (window.web3 && window.currentAccount) {
