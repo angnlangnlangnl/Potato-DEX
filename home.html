@@ -11,24 +11,21 @@
             color: #ccd6f0; 
         }
         .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #f0b90b; }
-
-        .search-row {
-            display: flex; gap: 8px; margin-bottom: 14px;
-        }
+        
+        /* 搜索框 + 内部图标 */
+        .search-wrapper { position: relative; margin-bottom: 14px; }
         .token-search {
-            flex: 1; padding: 10px 14px; background: #0d1125; border: 1px solid #2d325a;
-            border-radius: 12px; color: #fff; font-size: 14px;
-            outline: none; transition: border-color 0.2s;
+            width: 100%; padding: 10px 40px 10px 14px; background: #0d1125; border: 1px solid #2d325a;
+            border-radius: 12px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;
         }
         .token-search::placeholder { color: #6b7394; }
         .token-search:focus { border-color: #4ecca3; }
-
-        .search-btn {
-            padding: 10px 16px; background: #2d325a; border: 1px solid #2d325a;
-            border-radius: 12px; color: #fff; font-size: 14px; cursor: pointer;
-            white-space: nowrap; transition: background 0.2s;
+        .search-icon {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: #6b7394; cursor: pointer; font-size: 18px;
+            padding: 4px; display: flex; align-items: center; justify-content: center;
         }
-        .search-btn:hover { background: #3d426a; }
+        .search-icon:active { color: #4ecca3; }
 
         .input-row {
             background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
@@ -62,13 +59,10 @@
 
     <div class="glass-card">
         <div class="swap-title">🔄 兑换</div>
-
-        <!-- 搜索行：输入框 + 搜索按钮 -->
-        <div class="search-row">
-            <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址">
-            <button class="search-btn" onclick="searchToken()">🔍 搜索</button>
+        <div class="search-wrapper">
+            <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，按回车搜索">
+            <button class="search-icon" id="searchIconBtn" title="搜索">🔍</button>
         </div>
-
         <div class="slippage">滑点容忍度: 0.5%</div>
 
         <div class="input-row">
@@ -183,8 +177,8 @@
             }
         }
 
-        // 搜索功能（供按钮和回车共用）
-        window.searchToken = async function() {
+        // ====== 搜索功能：自动查找 PancakeSwap 交易对 ======
+        async function searchToken() {
             var searchInput = $('tokenSearch');
             var query = searchInput.value.trim();
             if (!query) return;
@@ -212,7 +206,7 @@
                 var symbol = await tokenContract.methods.symbol().call();
                 var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
 
-                // 优先尝试 WBNB 交易对
+                // 优先尝试与 WBNB 配对
                 var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
                 if (pair !== '0x0000000000000000000000000000000000000000') {
                     TOKEN_ADDRESSES[symbol] = tokenAddress;
@@ -222,7 +216,7 @@
                     $('inputTokenBtn').textContent = symbol + ' ▼';
                     $('outputTokenBtn').textContent = 'BNB ▼';
                 } else {
-                    // 尝试 USDT 交易对
+                    // 尝试与 USDT 配对
                     var usdtAddr = TOKEN_ADDRESSES['USDT'];
                     pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
                     if (pair !== '0x0000000000000000000000000000000000000000') {
@@ -247,14 +241,19 @@
                 console.error(e);
                 parent.showToast('代币信息获取失败，请检查地址', 'error');
             }
-        };
+        }
 
-        // 回车也能搜索
+        // 回车事件
         $('tokenSearch').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                window.searchToken();
+                searchToken();
             }
+        });
+
+        // 搜索图标点击事件
+        $('searchIconBtn').addEventListener('click', function() {
+            searchToken();
         });
 
         window.swapTokens = function() {
