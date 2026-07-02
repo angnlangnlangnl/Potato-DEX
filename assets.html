@@ -16,7 +16,6 @@
         .stat-val { font-size: 24px; font-weight: bold; color: #4ecca3; }
         .green-text { color: #4ecca3; }
 
-        /* 资产列表卡片 */
         .wallet-assets { margin-top: -5px; }
         .wa-header { 
             display: flex; justify-content: space-between; align-items: center; 
@@ -58,7 +57,6 @@
         .placeholder-text { text-align: center; padding: 30px; color: #a3adc9; }
     </style>
 
-    <!-- 总资产卡片 -->
     <div class="glass-card">
         <div class="flex-row">
             <div>
@@ -71,7 +69,6 @@
         </div>
     </div>
 
-    <!-- 资产列表 -->
     <div class="glass-card wallet-assets">
         <div class="wa-header">
             <span class="wa-tab">资产</span>
@@ -85,13 +82,9 @@
 
     <script>
     (function() {
-        // 必须默认显示的代币
         var DEFAULT_TOKENS = ['BNB', 'USDT', 'BTCB', 'ETH'];
-        
-        // 其他可能持有的代币（将动态扫描余额）
         var OTHER_TOKENS = ['USDC', 'BUSD', 'MYK', 'WBNB', 'CAKE'];
         
-        // 所有代币的配置信息
         var TOKEN_CONFIG = {
             'BNB':  { address: null, decimals: 18, iconColor: '#F0B90B', iconText: 'B', isNative: true },
             'USDT': { address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18, iconColor: '#26a17b', iconText: 'USDT', isNative: false },
@@ -111,7 +104,7 @@
 
         var priceCache = {};
 
-        function formatBalance(num, decimals) {
+        function formatBalance(num) {
             if (num === 0) return '0';
             if (num < 0.001) return num.toFixed(6);
             return num.toLocaleString('en-US', { maximumFractionDigits: 4 });
@@ -156,11 +149,9 @@
                     }
                 });
                 priceCache['WBNB'] = priceCache['BNB'];
-                // MYK 价格暂用固定值，也可以从 PancakeSwap 获取
                 priceCache['MYK'] = 0.00647;
             } catch (e) {
                 console.error('价格获取失败', e);
-                // 回退价格
                 priceCache = {
                     BNB: 540, USDT: 1, BTCB: 58000, ETH: 3200, USDC: 1, BUSD: 1,
                     MYK: 0.0065, WBNB: 540, CAKE: 2.5
@@ -184,10 +175,8 @@
 
             await fetchPrices();
 
-            // 收集所有要显示的代币及其余额
             var assetList = [];
             
-            // 1. 先加入四个默认代币（始终显示）
             for (var i = 0; i < DEFAULT_TOKENS.length; i++) {
                 var symbol = DEFAULT_TOKENS[i];
                 var balance = await getTokenBalance(symbol);
@@ -196,7 +185,6 @@
                 assetList.push({ symbol: symbol, balance: balance, price: price, value: value });
             }
             
-            // 2. 扫描其他代币，余额大于0的才加入
             for (var j = 0; j < OTHER_TOKENS.length; j++) {
                 var otherSymbol = OTHER_TOKENS[j];
                 var bal = await getTokenBalance(otherSymbol);
@@ -207,10 +195,8 @@
                 }
             }
 
-            // 3. 按价值从高到低排序
             assetList.sort(function(a, b) { return b.value - a.value; });
 
-            // 4. 渲染列表
             var totalValue = 0;
             var html = '';
 
@@ -218,7 +204,9 @@
                 var asset = assetList[k];
                 totalValue += asset.value;
                 var config = TOKEN_CONFIG[asset.symbol];
-                var bscBadge = (asset.symbol === 'USDT' || asset.symbol === 'USDC' || asset.symbol === 'BUSD') ? 
+                // 移除 USDT 的小图标，仅保留 USDC 和 BUSD 的角标
+                var showBadge = (asset.symbol === 'USDC' || asset.symbol === 'BUSD');
+                var bscBadge = showBadge ? 
                     '<div class="wa-network-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44"><path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/><path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/></svg></div>' : '';
 
                 html += 
@@ -236,7 +224,7 @@
                             '</div>' +
                         '</div>' +
                         '<div class="wa-asset-right">' +
-                            '<div class="wa-asset-balance">' + formatBalance(asset.balance, config.decimals) + '</div>' +
+                            '<div class="wa-asset-balance">' + formatBalance(asset.balance) + '</div>' +
                             '<div class="wa-asset-value">' + formatUSD(asset.value) + '</div>' +
                         '</div>' +
                     '</div>';
