@@ -33,10 +33,6 @@
         .p2p-header-left, .p2p-header-right { display: flex; align-items: center; gap: 12px; }
         .p2p-header-left span { font-weight: 600; }
         .p2p-header-left .sub-tab { position:relative; }
-        .p2p-header-left .new-badge {
-            position:absolute; top:-6px; right:-14px; background:var(--color-yellow); color:#000;
-            font-size:8px; padding:0 4px; border-radius:4px; font-weight:700;
-        }
         .p2p-currency-btn {
             background: transparent;
             border: 1px solid var(--border-color);
@@ -44,6 +40,7 @@
             padding: 4px 12px;
             border-radius: 16px;
             font-size: 14px;
+            cursor: pointer;
         }
 
         .p2p-action-bar {
@@ -165,7 +162,7 @@
         .p2p-limit-row {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: flex-end; /* 底部对齐 */
         }
         .p2p-limit-info {
             display: flex;
@@ -176,6 +173,12 @@
         .p2p-limit-text span { color: var(--text-primary); }
 
         .p2p-meta-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px; /* 增加间距让按钮呼吸 */
+        }
+        .p2p-pay-time {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
@@ -193,11 +196,6 @@
             color: var(--text-secondary);
         }
 
-        .p2p-action-row {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 4px;
-        }
         .p2p-buy-btn {
             background-color: var(--color-green);
             color: #ffffff;
@@ -207,21 +205,8 @@
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
+            white-space: nowrap;
         }
-
-        .p2p-verify-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background: #1e2531;
-            color: #a8b0c0;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            margin-top: 2px;
-            border: 1px solid #2f384a;
-        }
-        .p2p-verify-tag svg { fill: #6b7280; width: 12px; height: 12px; }
 
         .p2p-floating-action {
             position: fixed;
@@ -241,6 +226,21 @@
         .p2p-floating-action svg { fill: #ffffff; width: 20px; height: 20px; transform: rotate(-45deg); }
 
         .p2p-icon { width: 20px; height: 20px; fill: currentColor; }
+
+        .avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #3a4050;
+            color: #fff;
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 4px;
+            flex-shrink: 0;
+        }
     </style>
 
     <div class="p2p-container">
@@ -248,14 +248,11 @@
         <div class="p2p-header">
             <div class="p2p-header-left">
                 <svg class="p2p-icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-                <span>自选区</span>
-                <span class="sub-tab">严选区
-                    <span class="new-badge">新</span>
-                </span>
+                <span>OTC交易</span>
+                <span class="sub-tab">订单详情</span>
             </div>
             <div class="p2p-header-right">
                 <svg class="p2p-icon" style="color:var(--text-secondary);" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
-                <button class="p2p-currency-btn">CNY ▾</button>
             </div>
         </div>
 
@@ -265,6 +262,7 @@
                 <button class="p2p-toggle-btn active" data-type="buy">我要买</button>
                 <button class="p2p-toggle-btn" data-type="sell">我要卖</button>
             </div>
+            <button class="p2p-currency-btn">CNY ▾</button>
         </div>
 
         <!-- Filter Bar -->
@@ -291,10 +289,11 @@
             <div class="p2p-card">
                 <div class="p2p-card-top">
                     <div class="p2p-seller-name">
-                        🟢 遥遥领先-五年老店-安全零冻
+                        <span class="avatar">遥</span>
+                        遥遥领先-五年老店-安全零冻
                         <div class="p2p-tags">
                             <span class="p2p-tag gold">保证金</span>
-                            <span class="p2p-tag gold">留五星</span>
+                            <span class="p2p-tag gold">★★★★★</span>
                         </div>
                     </div>
                 </div>
@@ -307,21 +306,20 @@
 
                 <div class="p2p-limit-row">
                     <div class="p2p-limit-info">
+                        <div class="p2p-limit-text">保证金：<span>0.00 USDT</span></div>
                         <div class="p2p-limit-text">限额 <span>400 - 799 CNY</span></div>
                         <div class="p2p-limit-text">可用 <span>289.93 USDT</span></div>
-                        <div class="p2p-limit-text" style="margin-top: 2px;">保证金：<span>0.00 USDT</span></div>
                     </div>
                     <div class="p2p-meta-info">
-                        <div class="p2p-pay-method">
-                            <span>支付宝</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        <div class="p2p-pay-time">
+                            <div class="p2p-pay-method">
+                                <span>支付宝</span>
+                                <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                            </div>
+                            <div class="p2p-time-limit">🕒 15 分钟</div>
                         </div>
-                        <div class="p2p-time-limit">🕒 15 分钟</div>
+                        <button class="p2p-buy-btn">买入</button>
                     </div>
-                </div>
-
-                <div class="p2p-action-row">
-                    <button class="p2p-buy-btn">买入</button>
                 </div>
             </div>
 
@@ -329,10 +327,11 @@
             <div class="p2p-card">
                 <div class="p2p-card-top">
                     <div class="p2p-seller-name">
-                        🟢 神盾严选专区100万单老商家
+                        <span class="avatar">神</span>
+                        神盾严选专区100万单老商家
                         <div class="p2p-tags">
                             <span class="p2p-tag gold">保证金</span>
-                            <span class="p2p-tag gold">留五星</span>
+                            <span class="p2p-tag gold">★★★★★</span>
                         </div>
                     </div>
                 </div>
@@ -345,21 +344,20 @@
 
                 <div class="p2p-limit-row">
                     <div class="p2p-limit-info">
+                        <div class="p2p-limit-text">保证金：<span>0.00 USDT</span></div>
                         <div class="p2p-limit-text">限额 <span>300 - 799 CNY</span></div>
                         <div class="p2p-limit-text">可用 <span>2,627.14 USDT</span></div>
-                        <div class="p2p-limit-text" style="margin-top: 2px;">保证金：<span>0.00 USDT</span></div>
                     </div>
                     <div class="p2p-meta-info">
-                        <div class="p2p-pay-method">
-                            <span>支付宝</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        <div class="p2p-pay-time">
+                            <div class="p2p-pay-method">
+                                <span>支付宝</span>
+                                <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                            </div>
+                            <div class="p2p-time-limit">🕒 15 分钟</div>
                         </div>
-                        <div class="p2p-time-limit">🕒 15 分钟</div>
+                        <button class="p2p-buy-btn">买入</button>
                     </div>
-                </div>
-
-                <div class="p2p-action-row">
-                    <button class="p2p-buy-btn">买入</button>
                 </div>
             </div>
 
@@ -367,10 +365,11 @@
             <div class="p2p-card">
                 <div class="p2p-card-top">
                     <div class="p2p-seller-name">
-                        🟢 聚优商行-24h
+                        <span class="avatar">聚</span>
+                        聚优商行-24h
                         <div class="p2p-tags">
                             <span class="p2p-tag gold">保证金</span>
-                            <span class="p2p-tag gold">留五星</span>
+                            <span class="p2p-tag gold">★★★★★</span>
                         </div>
                     </div>
                 </div>
@@ -383,27 +382,20 @@
 
                 <div class="p2p-limit-row">
                     <div class="p2p-limit-info">
+                        <div class="p2p-limit-text">保证金：<span>0.00 USDT</span></div>
                         <div class="p2p-limit-text">限额 <span>30,000 - 135,990 CNY</span></div>
                         <div class="p2p-limit-text">可用 <span>20,087.27 USDT</span></div>
-                        <div class="p2p-limit-text" style="margin-top: 2px;">保证金：<span>0.00 USDT</span></div>
-                        
-                        <div class="p2p-verify-tag">
-                            <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-                            需要验证
-                        </div>
                     </div>
-
                     <div class="p2p-meta-info">
-                        <div class="p2p-pay-method">
-                            <span>银行</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        <div class="p2p-pay-time">
+                            <div class="p2p-pay-method">
+                                <span>银行</span>
+                                <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                            </div>
+                            <div class="p2p-time-limit">🕒 15 分钟</div>
                         </div>
-                        <div class="p2p-time-limit">🕒 15 分钟</div>
+                        <button class="p2p-buy-btn">买入</button>
                     </div>
-                </div>
-
-                <div class="p2p-action-row">
-                    <button class="p2p-buy-btn">买入</button>
                 </div>
             </div>
         </div>
