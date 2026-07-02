@@ -1,4 +1,4 @@
-<div id="page-assets" class="page-container">
+<div id="page-trade" class="page-container">
     <style>
         .glass-card { 
             background: rgba(18,22,40,0.7); 
@@ -6,282 +6,472 @@
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px; 
-            padding: 16px; 
+            padding: 20px; 
             margin-bottom: 15px; 
             color: #ccd6f0; 
         }
-        .flex-row { display: flex; justify-content: space-between; align-items: center; }
-        .title-main { color: #f0b90b; font-size: 18px; font-weight: bold; }
-        .desc { color: #a3adc9; font-size: 13px; }
-        .stat-val { font-size: 24px; font-weight: bold; color: #4ecca3; }
-        .green-text { color: #4ecca3; }
+        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #f0b90b; }
+        
+        .search-wrapper { position: relative; margin-bottom: 14px; }
+        .token-search {
+            width: 100%; padding: 10px 40px 10px 14px; background: #0d1125; border: 1px solid #2d325a;
+            border-radius: 12px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;
+        }
+        .token-search::placeholder { color: #6b7394; }
+        .token-search:focus { border-color: #4ecca3; }
+        .search-icon {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: #6b7394; cursor: pointer; font-size: 18px;
+            padding: 4px; display: flex; align-items: center; justify-content: center;
+        }
+        .search-icon:active { color: #4ecca3; }
 
-        /* 资产列表卡片 */
-        .wallet-assets { margin-top: -5px; }
-        .wa-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 0 0 12px 0; border-bottom: 1px solid rgba(255,255,255,0.08); 
+        .input-row {
+            background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
+            padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
         }
-        .wa-tab { font-size: 15px; color: #f0b90b; font-weight: 600; }
-        .wa-actions { display: flex; gap: 16px; color: #a3adc9; }
-        .wa-actions span { font-size: 18px; cursor: pointer; }
-        .wa-asset-list { display: flex; flex-direction: column; }
-        .wa-asset-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08);
-            cursor: pointer; transition: background 0.2s;
+        .input-row input {
+            background: transparent; border: none; color: #fff; font-size: 20px;
+            width: 60%; outline: none; -moz-appearance: textfield;
         }
-        .wa-asset-item:active { background: rgba(255,255,255,0.03); }
-        .wa-asset-left { display: flex; align-items: center; gap: 12px; }
-        .wa-token-icon-wrapper { position: relative; width: 40px; height: 40px; }
-        .wa-token-icon {
-            width: 100%; height: 100%; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 16px; color: white;
+        .input-row input::-webkit-outer-spin-button,
+        .input-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .token-select {
+            background: #2d325a; border: none; color: #fff; padding: 8px 14px;
+            border-radius: 20px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;
         }
-        .wa-network-badge {
-            position: absolute; bottom: -2px; right: -2px;
-            width: 16px; height: 16px; border-radius: 50%;
-            border: 2px solid rgba(18,22,40,0.7);
-            display: flex; align-items: center; justify-content: center; background: #fff;
+        .balance-row { text-align: right; font-size: 12px; color: #888; padding: 0 10px; margin-bottom: 8px; }
+        .max-btn {
+            color: #f0b90b; cursor: pointer; margin-left: 4px; text-decoration: none; font-weight: 500;
         }
-        .wa-token-info { display: flex; flex-direction: column; gap: 2px; }
-        .wa-token-name { font-size: 16px; font-weight: 500; color: #EAECF0; }
-        .wa-token-price-wrap { display: flex; align-items: center; gap: 6px; }
-        .wa-token-price { font-size: 14px; color: #8E94B2; }
-        .wa-token-change { font-size: 14px; font-weight: 500; }
-        .wa-token-change.up { color: #4ecca3; }
-        .wa-token-change.down { color: #e94560; }
-        .wa-asset-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-        .wa-asset-balance { font-size: 16px; font-weight: 500; color: #EAECF0; }
-        .wa-asset-value { font-size: 14px; color: #8E94B2; }
-        .placeholder-text { text-align: center; padding: 30px; color: #a3adc9; }
+        .swap-arrow {
+            width: 40px; height: 40px; background: #1e2a4a; border: 2px solid #2d325a;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin: -10px auto; position: relative; z-index: 2; cursor: pointer; color: #f0b90b; font-size: 18px;
+        }
+        .swap-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 16px;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s;
+            background: #f0b90b; color: #0b0f1a;
+        }
+        .swap-btn:disabled { background: #2d325a; color: #666; cursor: not-allowed; }
+        .price-info { font-size: 13px; color: #888; text-align: center; margin-top: 12px; }
+        .slippage { display: flex; justify-content: flex-end; margin-bottom: 10px; font-size: 12px; color: #888; }
+
+        /* 交易记录卡片样式 */
+        .recent-trade-card { margin-top: 0; }
+        .trade-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .trade-record-title { font-size: 16px; font-weight: bold; color: #f0b90b; }
+        .trade-record-time { font-size: 12px; color: #888; }
+        .trade-record-content { display: flex; flex-direction: column; gap: 8px; }
+        .trade-record-row { display: flex; justify-content: space-between; font-size: 14px; }
+        .trade-record-label { color: #888; }
+        .trade-record-value { color: #ccd6f0; }
+        .tx-hash { color: #4ecca3; font-size: 12px; text-decoration: none; word-break: break-all; }
+        .tx-hash:hover { text-decoration: underline; }
+        .no-record { text-align: center; color: #888; font-size: 14px; padding: 10px 0; }
     </style>
 
-    <!-- 总资产卡片 -->
+    <!-- 兑换卡片 -->
     <div class="glass-card">
-        <div class="flex-row">
-            <div>
-                <div class="title-main">💰 总资产</div>
-                <div class="desc">基于链上真实余额计算</div>
-            </div>
-            <div>
-                <div class="stat-val" id="totalAssetValue">$--</div>
-            </div>
+        <div class="swap-title">兑换</div>
+        <div class="search-wrapper">
+            <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，搜索">
+            <button class="search-icon" id="searchIconBtn" title="搜索">🔍</button>
         </div>
+        <div class="balance-row">余额: <span id="inputBalance">0.00</span> <span class="max-btn" id="inputMaxBtn">全部</span></div>
+
+        <div class="input-row">
+            <input type="number" id="inputAmount" placeholder="0.0" step="any">
+            <button class="token-select" id="inputTokenBtn">USDT ▼</button>
+        </div>
+        
+        <div class="swap-arrow" onclick="swapTokens()">↓</div>
+        <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
+
+        <div class="input-row">
+            <input type="number" id="outputAmount" placeholder="0.0" readonly>
+            <button class="token-select" id="outputTokenBtn">BNB ▼</button>
+        </div>
+        
+        <div class="slippage">滑点容忍度: 0.5%</div>
+        <button id="swapButton" class="swap-btn" onclick="executeSwap()">连接钱包</button>
+        <div class="price-info" id="rateInfo">--</div>
     </div>
 
-    <!-- 资产列表 -->
-    <div class="glass-card wallet-assets">
-        <div class="wa-header">
-            <span class="wa-tab">资产</span>
-            <div class="wa-actions">
-                <span>🔍</span>
-                <span>+</span>
-            </div>
+    <!-- 最近交易记录卡片 (始终显示) -->
+    <div class="glass-card recent-trade-card" id="recentTradeCard">
+        <div class="trade-record-header">
+            <span class="trade-record-title">📋 最近交易</span>
+            <span class="trade-record-time" id="tradeTime">--</span>
         </div>
-        <div class="wa-asset-list" id="waTokenList"></div>
+        <div class="trade-record-content" id="tradeRecordContent">
+            <div class="no-record">暂无交易记录</div>
+        </div>
     </div>
 
     <script>
     (function() {
-        // 必须默认显示的代币
-        var DEFAULT_TOKENS = ['BNB', 'USDT', 'BTCB', 'ETH'];
-        
-        // 其他可能持有的代币（将动态扫描余额）
-        var OTHER_TOKENS = ['USDC', 'BUSD', 'MYK', 'WBNB', 'CAKE'];
-        
-        // 所有代币的配置信息
-        var TOKEN_CONFIG = {
-            'BNB':  { address: null, decimals: 18, iconColor: '#F0B90B', iconText: 'B', isNative: true },
-            'USDT': { address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18, iconColor: '#26a17b', iconText: 'USDT', isNative: false },
-            'BTCB': { address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', decimals: 18, iconColor: '#f7931a', iconText: '₿', isNative: false },
-            'ETH':  { address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', decimals: 18, iconColor: '#627eea', iconText: '♦', isNative: false },
-            'USDC': { address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18, iconColor: '#2775ca', iconText: 'USDC', isNative: false },
-            'BUSD': { address: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', decimals: 18, iconColor: '#F0B90B', iconText: 'BUSD', isNative: false },
-            'MYK':  { address: '0xc23CfEeC6D188D627C85106f682D9eb38d94192a', decimals: 18, iconColor: '#3f51b5', iconText: 'M', isNative: false },
-            'WBNB': { address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', decimals: 18, iconColor: '#F0B90B', iconText: 'WBNB', isNative: false },
-            'CAKE': { address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', decimals: 18, iconColor: '#D1884F', iconText: 'C', isNative: false }
+        var TOKEN_ADDRESSES = {
+            'USDT': '0x55d398326f99059fF775485246999027B3197955',
+            'MYK': '0xc23CfEeC6D188D627C85106f682D9eb38d94192a',
+            'BNB': null,
+            'BUSD': '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
+            'WBNB': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            'CAKE': '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
+            'ETH': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+            'BTCB': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c'
         };
-
         var ERC20_ABI = [
             {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
-            {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"}
+            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"}
         ];
+        var ROUTER_ABI = [
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactETHForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForETH","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}
+        ];
+        var FACTORY_ABI = [{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"getPair","outputs":[{"name":"","type":"address"}],"type":"function"}];
 
-        var priceCache = {};
+        var currentInputToken = 'USDT';
+        var currentOutputToken = 'BNB';
+        var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+        var FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73';
+        var WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
+        var MAX_UINT256 = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
 
-        function formatBalance(num, decimals) {
-            if (num === 0) return '0';
-            if (num < 0.001) return num.toFixed(6);
-            return num.toLocaleString('en-US', { maximumFractionDigits: 4 });
+        function $(id) { return document.getElementById(id); }
+        function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
+
+        async function getDecimals(tokenSymbol) {
+            if (tokenSymbol === 'BNB') return 18;
+            var addr = TOKEN_ADDRESSES[tokenSymbol];
+            if (!addr) return 18;
+            var contract = new web3.eth.Contract(ERC20_ABI, addr);
+            return await contract.methods.decimals().call();
         }
 
-        function formatUSD(num) {
-            if (num === 0) return '$0';
-            if (num < 0.01) return '$' + num.toFixed(4);
-            return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        async function getTokenBalance(symbol) {
+        async function getBalance(tokenSymbol) {
             if (!window.web3 || !window.currentAccount) return 0;
-            var config = TOKEN_CONFIG[symbol];
-            if (!config) return 0;
-            var account = window.currentAccount;
+            if (tokenSymbol === 'BNB') {
+                var balWei = await web3.eth.getBalance(window.currentAccount);
+                return n(balWei);
+            }
+            var addr = TOKEN_ADDRESSES[tokenSymbol];
+            if (!addr) return 0;
+            var contract = new web3.eth.Contract(ERC20_ABI, addr);
+            var decimals = await contract.methods.decimals().call();
+            var bal = await contract.methods.balanceOf(window.currentAccount).call();
+            return parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
+        }
+
+        async function buildPath(inputSymbol, outputSymbol) {
+            var inputAddr = (inputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[inputSymbol];
+            var outputAddr = (outputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[outputSymbol];
+            if (!inputAddr || !outputAddr) return null;
+            if (inputAddr === outputAddr) return [inputAddr];
             try {
-                if (config.isNative) {
-                    var balanceWei = await window.web3.eth.getBalance(account);
-                    return parseFloat(window.web3.utils.fromWei(balanceWei, 'ether'));
-                } else {
-                    var contract = new window.web3.eth.Contract(ERC20_ABI, config.address);
-                    var decimals = await contract.methods.decimals().call();
-                    var bal = await contract.methods.balanceOf(account).call();
-                    return parseFloat(window.web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, outputAddr]).call();
+                return [inputAddr, outputAddr];
+            } catch (e) {
+                try {
+                    await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, WBNB, outputAddr]).call();
+                    return [inputAddr, WBNB, outputAddr];
+                } catch (e2) {
+                    var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                    try {
+                        await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, usdtAddr, outputAddr]).call();
+                        return [inputAddr, usdtAddr, outputAddr];
+                    } catch (e3) { return null; }
                 }
-            } catch (e) {
-                console.error('获取' + symbol + '余额失败:', e);
-                return 0;
             }
         }
 
-        async function fetchPrices() {
+        async function fetchSpotPrice() {
+            if (!web3) return 0;
             try {
-                var symbols = ['BNBUSDT', 'USDTUSDT', 'BTCBUSDT', 'ETHUSDT', 'USDCUSDT', 'BUSDUSDT', 'CAKEUSDT'];
-                var responses = await Promise.all(symbols.map(s => 
-                    fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + s).then(r => r.json())
-                ));
-                responses.forEach(item => {
-                    if (item && item.price) {
-                        priceCache[item.symbol.replace('USDT', '')] = parseFloat(item.price);
-                    }
-                });
-                priceCache['WBNB'] = priceCache['BNB'];
-                // MYK 价格暂用固定值，也可以从 PancakeSwap 获取
-                priceCache['MYK'] = 0.00647;
-            } catch (e) {
-                console.error('价格获取失败', e);
-                // 回退价格
-                priceCache = {
-                    BNB: 540, USDT: 1, BTCB: 58000, ETH: 3200, USDC: 1, BUSD: 1,
-                    MYK: 0.0065, WBNB: 540, CAKE: 2.5
-                };
+                var path = await buildPath(currentInputToken, currentOutputToken);
+                if (!path) return 0;
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                var decimals = await getDecimals(currentInputToken);
+                var oneUnit = web3.utils.toWei('1', 'ether');
+                if (decimals !== 18) oneUnit = BigInt(10 ** decimals).toString();
+                var amounts = await routerContract.methods.getAmountsOut(oneUnit, path).call();
+                var outputDecimals = await getDecimals(currentOutputToken);
+                var rawOut = amounts[amounts.length-1];
+                return parseFloat(web3.utils.fromWei(rawOut, 'ether')) / Math.pow(10, 18 - outputDecimals);
+            } catch (e) { return 0; }
+        }
+
+        async function updateBalances() {
+            var inputBal = await getBalance(currentInputToken);
+            var outputBal = await getBalance(currentOutputToken);
+            $('inputBalance').textContent = inputBal.toFixed(4);
+            $('outputBalance').textContent = outputBal.toFixed(4);
+        }
+
+        async function updateRate() {
+            var price = await fetchSpotPrice();
+            if (price > 0) {
+                $('rateInfo').textContent = '1 ' + currentInputToken + ' ≈ ' + price.toFixed(6) + ' ' + currentOutputToken;
+            } else {
+                $('rateInfo').textContent = '无法获取价格';
+            }
+            var inputAmt = parseFloat($('inputAmount').value) || 0;
+            if (inputAmt > 0 && price > 0) {
+                $('outputAmount').value = (inputAmt * price * 0.995).toFixed(6);
+            } else {
+                $('outputAmount').value = '0.0';
+            }
+            var btn = $('swapButton');
+            if (!window.currentAccount) {
+                btn.textContent = '连接钱包';
+                btn.disabled = true;
+            } else if (inputAmt <= 0) {
+                btn.textContent = '输入金额';
+                btn.disabled = true;
+            } else {
+                btn.textContent = '兑换';
+                btn.disabled = false;
             }
         }
 
-        function getTokenPrice(symbol) {
-            return priceCache[symbol] || 0;
+        async function searchToken() {
+            var searchInput = $('tokenSearch');
+            var query = searchInput.value.trim();
+            if (!query) return;
+            if (!web3) { parent.showToast('钱包未连接', 'error'); return; }
+            var tokenAddress = null;
+            var upperQuery = query.toUpperCase();
+            if (TOKEN_ADDRESSES[upperQuery] !== undefined) {
+                tokenAddress = TOKEN_ADDRESSES[upperQuery];
+                if (tokenAddress === null) tokenAddress = WBNB;
+            } else if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
+                tokenAddress = query;
+            } else { parent.showToast('无效的合约地址', 'error'); return; }
+            try {
+                var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
+                var symbol = await tokenContract.methods.symbol().call();
+                var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
+                var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
+                if (pair !== '0x0000000000000000000000000000000000000000') {
+                    TOKEN_ADDRESSES[symbol] = tokenAddress;
+                    currentInputToken = symbol;
+                    currentOutputToken = 'BNB';
+                } else {
+                    var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                    pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
+                    if (pair !== '0x0000000000000000000000000000000000000000') {
+                        TOKEN_ADDRESSES[symbol] = tokenAddress;
+                        currentInputToken = symbol;
+                        currentOutputToken = 'USDT';
+                    } else { parent.showToast('未找到该代币的交易对 (BNB/USDT)', 'error'); return; }
+                }
+                $('inputTokenBtn').textContent = currentInputToken + ' ▼';
+                $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
+                $('inputAmount').value = '';
+                $('outputAmount').value = '0.0';
+                updateBalances();
+                updateRate();
+                searchInput.value = '';
+                parent.showToast('已加载 ' + currentInputToken + '/' + currentOutputToken + ' 交易对', 'success');
+            } catch (e) { console.error(e); parent.showToast('代币信息获取失败，请检查地址', 'error'); }
         }
 
-        async function refreshAssets() {
-            var container = document.getElementById('waTokenList');
-            if (!container) return;
-            
-            if (!window.web3 || !window.currentAccount) {
-                container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
-                document.getElementById('totalAssetValue').textContent = '$--';
+        $('tokenSearch').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); searchToken(); } });
+        $('searchIconBtn').addEventListener('click', searchToken);
+        $('inputMaxBtn').addEventListener('click', function() {
+            var bal = parseFloat($('inputBalance').textContent) || 0;
+            if (bal > 0) { $('inputAmount').value = bal; updateRate(); }
+        });
+
+        window.swapTokens = function() {
+            var temp = currentInputToken;
+            currentInputToken = currentOutputToken;
+            currentOutputToken = temp;
+            $('inputTokenBtn').textContent = currentInputToken + ' ▼';
+            $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
+            $('inputAmount').value = '';
+            $('outputAmount').value = '0.0';
+            updateBalances();
+            updateRate();
+        };
+
+        // ========== 交易记录存储与展示 ==========
+        function saveTradeRecord(record) {
+            try {
+                var records = JSON.parse(localStorage.getItem('potato_recent_trades') || '[]');
+                records.unshift(record);
+                if (records.length > 5) records = records.slice(0, 5);
+                localStorage.setItem('potato_recent_trades', JSON.stringify(records));
+            } catch (e) {}
+        }
+
+        function getLatestTradeRecord() {
+            try {
+                var records = JSON.parse(localStorage.getItem('potato_recent_trades') || '[]');
+                return records.length > 0 ? records[0] : null;
+            } catch (e) { return null; }
+        }
+
+        function renderRecentTrade() {
+            var record = getLatestTradeRecord();
+            var card = $('recentTradeCard');
+            var content = $('tradeRecordContent');
+            var timeEl = $('tradeTime');
+            if (!record) {
+                if (card) card.style.display = 'block';
+                if (timeEl) timeEl.textContent = '--';
+                if (content) content.innerHTML = '<div class="no-record">暂无交易记录</div>';
                 return;
             }
-
-            await fetchPrices();
-
-            // 收集所有要显示的代币及其余额
-            var assetList = [];
-            
-            // 1. 先加入四个默认代币（始终显示）
-            for (var i = 0; i < DEFAULT_TOKENS.length; i++) {
-                var symbol = DEFAULT_TOKENS[i];
-                var balance = await getTokenBalance(symbol);
-                var price = getTokenPrice(symbol);
-                var value = balance * price;
-                assetList.push({ symbol: symbol, balance: balance, price: price, value: value });
+            if (card) card.style.display = 'block';
+            if (timeEl) timeEl.textContent = record.time;
+            if (content) {
+                var txHashDisplay = record.txHash ? 
+                    '<div class="trade-record-row"><span class="trade-record-label">交易哈希</span><a class="tx-hash" href="https://bscscan.com/tx/' + record.txHash + '" target="_blank">' + record.txHash.substring(0, 10) + '...' + record.txHash.substring(record.txHash.length - 8) + '</a></div>' : '';
+                content.innerHTML = 
+                    '<div class="trade-record-row"><span class="trade-record-label">交易对</span><span class="trade-record-value">' + record.inputToken + ' → ' + record.outputToken + '</span></div>' +
+                    '<div class="trade-record-row"><span class="trade-record-label">输入</span><span class="trade-record-value">' + record.inputAmount + ' ' + record.inputToken + '</span></div>' +
+                    '<div class="trade-record-row"><span class="trade-record-label">输出</span><span class="trade-record-value">' + record.outputAmount + ' ' + record.outputToken + '</span></div>' +
+                    txHashDisplay;
             }
-            
-            // 2. 扫描其他代币，余额大于0的才加入
-            for (var j = 0; j < OTHER_TOKENS.length; j++) {
-                var otherSymbol = OTHER_TOKENS[j];
-                var bal = await getTokenBalance(otherSymbol);
-                if (bal > 0) {
-                    var pr = getTokenPrice(otherSymbol);
-                    var val = bal * pr;
-                    assetList.push({ symbol: otherSymbol, balance: bal, price: pr, value: val });
-                }
-            }
-
-            // 3. 按价值从高到低排序
-            assetList.sort(function(a, b) { return b.value - a.value; });
-
-            // 4. 渲染列表
-            var totalValue = 0;
-            var html = '';
-
-            for (var k = 0; k < assetList.length; k++) {
-                var asset = assetList[k];
-                totalValue += asset.value;
-                var config = TOKEN_CONFIG[asset.symbol];
-                var bscBadge = (asset.symbol === 'USDT' || asset.symbol === 'USDC' || asset.symbol === 'BUSD') ? 
-                    '<div class="wa-network-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44"><path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/><path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/></svg></div>' : '';
-
-                html += 
-                    '<div class="wa-asset-item">' +
-                        '<div class="wa-asset-left">' +
-                            '<div class="wa-token-icon-wrapper">' +
-                                '<div class="wa-token-icon" style="background-color:' + config.iconColor + ';">' + config.iconText + '</div>' +
-                                bscBadge +
-                            '</div>' +
-                            '<div class="wa-token-info">' +
-                                '<div class="wa-token-name">' + asset.symbol + '</div>' +
-                                '<div class="wa-token-price-wrap">' +
-                                    '<span class="wa-token-price">' + formatUSD(asset.price) + '</span>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="wa-asset-right">' +
-                            '<div class="wa-asset-balance">' + formatBalance(asset.balance, config.decimals) + '</div>' +
-                            '<div class="wa-asset-value">' + formatUSD(asset.value) + '</div>' +
-                        '</div>' +
-                    '</div>';
-            }
-
-            container.innerHTML = html || '<div class="placeholder-text">暂无资产</div>';
-            document.getElementById('totalAssetValue').textContent = formatUSD(totalValue);
         }
 
+        renderRecentTrade();
+
+        window.executeSwap = async function() {
+            if (!window.currentAccount) {
+                parent.showToast('请先连接钱包', 'error');
+                return;
+            }
+            var amount = $('inputAmount').value;
+            if (!amount || parseFloat(amount) <= 0) {
+                parent.showToast('请输入有效数量', 'error');
+                return;
+            }
+            var btn = $('swapButton');
+            btn.disabled = true;
+            btn.textContent = '检查授权...';
+
+            try {
+                var account = window.currentAccount;
+                var inputDecimals = await getDecimals(currentInputToken);
+                var outputDecimals = await getDecimals(currentOutputToken);
+
+                var amountInWei;
+                if (inputDecimals === 18) {
+                    amountInWei = web3.utils.toWei(amount, 'ether');
+                } else {
+                    amountInWei = BigInt(Math.floor(parseFloat(amount) * (10 ** inputDecimals))).toString();
+                }
+
+                var path = await buildPath(currentInputToken, currentOutputToken);
+                if (!path) {
+                    parent.showToast('无有效兑换路径', 'error');
+                    btn.disabled = false; btn.textContent = '兑换'; return;
+                }
+
+                var price = await fetchSpotPrice();
+                if (price <= 0) {
+                    parent.showToast('无法获取价格', 'error');
+                    btn.disabled = false; btn.textContent = '兑换'; return;
+                }
+                var expectedOut = parseFloat(amount) * price;
+                var amountOutMin = expectedOut * 0.995;
+                var amountOutMinWei;
+                if (outputDecimals === 18) {
+                    amountOutMinWei = web3.utils.toWei(amountOutMin.toFixed(18), 'ether');
+                } else {
+                    amountOutMinWei = BigInt(Math.floor(amountOutMin * (10 ** outputDecimals))).toString();
+                }
+
+                var deadline = Math.floor(Date.now()/1000) + 600;
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                var tx;
+
+                if (currentInputToken === 'BNB') {
+                    btn.textContent = '等待确认...';
+                    tx = await routerContract.methods.swapExactETHForTokens(
+                        amountOutMinWei, path, account, deadline
+                    ).send({ from: account, value: amountInWei });
+                } else {
+                    var tokenAddr = TOKEN_ADDRESSES[currentInputToken];
+                    var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
+                    var allowance = await tokenContract.methods.allowance(account, ROUTER).call();
+                    if (BigInt(allowance) < BigInt(amountInWei)) {
+                        btn.textContent = '授权中...';
+                        parent.showToast('需要授权，请确认', 'info');
+                        await tokenContract.methods.approve(ROUTER, MAX_UINT256).send({ from: account });
+                        parent.showToast('授权成功，继续兑换', 'success');
+                        btn.textContent = '正在兑换...';
+                    }
+
+                    if (currentOutputToken === 'BNB') {
+                        tx = await routerContract.methods.swapExactTokensForETH(
+                            amountInWei, amountOutMinWei, path, account, deadline
+                        ).send({ from: account });
+                    } else {
+                        tx = await routerContract.methods.swapExactTokensForTokens(
+                            amountInWei, amountOutMinWei, path, account, deadline
+                        ).send({ from: account });
+                    }
+                }
+
+                var record = {
+                    time: new Date().toLocaleString(),
+                    inputToken: currentInputToken,
+                    outputToken: currentOutputToken,
+                    inputAmount: amount,
+                    outputAmount: expectedOut.toFixed(6),
+                    txHash: tx.transactionHash
+                };
+                saveTradeRecord(record);
+                renderRecentTrade();
+
+                parent.showToast('兑换成功！', 'success');
+                $('inputAmount').value = '';
+                $('outputAmount').value = '0.0';
+                updateBalances();
+            } catch (e) {
+                console.error(e);
+                var msg = e.message || '';
+                if (msg.includes('User denied') || msg.includes('rejected')) {
+                    parent.showToast('交易已取消', 'error');
+                } else if (msg.includes('INSUFFICIENT_OUTPUT_AMOUNT')) {
+                    parent.showToast('价格波动过大，请重试', 'error');
+                } else {
+                    parent.showToast('交易失败: ' + msg.substring(0, 100), 'error');
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '兑换';
+            }
+        };
+
+        $('inputAmount').addEventListener('input', updateRate);
         document.addEventListener('walletConnected', function() {
-            refreshAssets();
-        });
-        document.addEventListener('walletDisconnected', function() {
-            document.getElementById('totalAssetValue').textContent = '$--';
-            var container = document.getElementById('waTokenList');
-            if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
+            updateBalances();
+            updateRate();
+            renderRecentTrade();
         });
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(function() {
-                    if (window.web3 && window.currentAccount) {
-                        refreshAssets();
-                    } else {
-                        var container = document.getElementById('waTokenList');
-                        if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
-                    }
-                }, 500);
-            });
+        if (window.web3 && window.currentAccount) {
+            updateBalances();
+            updateRate();
         } else {
             setTimeout(function() {
                 if (window.web3 && window.currentAccount) {
-                    refreshAssets();
-                } else {
-                    var container = document.getElementById('waTokenList');
-                    if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
+                    updateBalances();
+                    updateRate();
                 }
             }, 500);
         }
-
-        setInterval(function() {
-            if (window.currentAccount) {
-                refreshAssets();
-            }
-        }, 30000);
     })();
     </script>
 </div>
