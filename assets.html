@@ -166,35 +166,39 @@
         async function refreshAssets() {
             var container = document.getElementById('waTokenList');
             if (!container) return;
-            
-            if (!window.web3 || !window.currentAccount) {
-                container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
-                document.getElementById('totalAssetValue').textContent = '$--';
-                return;
-            }
 
+            // 始终先获取价格（不需要钱包）
             await fetchPrices();
 
             var assetList = [];
-            
+            var isConnected = window.web3 && window.currentAccount;
+
+            // 添加四个默认代币（始终显示）
             for (var i = 0; i < DEFAULT_TOKENS.length; i++) {
                 var symbol = DEFAULT_TOKENS[i];
-                var balance = await getTokenBalance(symbol);
+                var balance = 0;
+                if (isConnected) {
+                    balance = await getTokenBalance(symbol);
+                }
                 var price = getTokenPrice(symbol);
                 var value = balance * price;
                 assetList.push({ symbol: symbol, balance: balance, price: price, value: value });
             }
-            
-            for (var j = 0; j < OTHER_TOKENS.length; j++) {
-                var otherSymbol = OTHER_TOKENS[j];
-                var bal = await getTokenBalance(otherSymbol);
-                if (bal > 0) {
-                    var pr = getTokenPrice(otherSymbol);
-                    var val = bal * pr;
-                    assetList.push({ symbol: otherSymbol, balance: bal, price: pr, value: val });
+
+            // 连接钱包后才扫描其他代币
+            if (isConnected) {
+                for (var j = 0; j < OTHER_TOKENS.length; j++) {
+                    var otherSymbol = OTHER_TOKENS[j];
+                    var bal = await getTokenBalance(otherSymbol);
+                    if (bal > 0) {
+                        var pr = getTokenPrice(otherSymbol);
+                        var val = bal * pr;
+                        assetList.push({ symbol: otherSymbol, balance: bal, price: pr, value: val });
+                    }
                 }
             }
 
+            // 按价值从高到低排序
             assetList.sort(function(a, b) { return b.value - a.value; });
 
             var totalValue = 0;
@@ -204,10 +208,13 @@
                 var asset = assetList[k];
                 totalValue += asset.value;
                 var config = TOKEN_CONFIG[asset.symbol];
-                // 移除 USDT 的小图标，仅保留 USDC 和 BUSD 的角标
                 var showBadge = (asset.symbol === 'USDC' || asset.symbol === 'BUSD');
                 var bscBadge = showBadge ? 
                     '<div class="wa-network-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44"><path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/><path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/></svg></div>' : '';
+
+                // 未连接钱包时余额显示 "--"
+                var balanceStr = isConnected ? formatBalance(asset.balance) : '--';
+                var valueStr = isConnected ? formatUSD(asset.value) : '$--';
 
                 html += 
                     '<div class="wa-asset-item">' +
@@ -224,51 +231,36 @@
                             '</div>' +
                         '</div>' +
                         '<div class="wa-asset-right">' +
-                            '<div class="wa-asset-balance">' + formatBalance(asset.balance) + '</div>' +
-                            '<div class="wa-asset-value">' + formatUSD(asset.value) + '</div>' +
+                            '<div class="wa-asset-balance">' + balanceStr + '</div>' +
+                            '<div class="wa-asset-value">' + valueStr + '</div>' +
                         '</div>' +
                     '</div>';
             }
 
             container.innerHTML = html || '<div class="placeholder-text">暂无资产</div>';
-            document.getElementById('totalAssetValue').textContent = formatUSD(totalValue);
+            document.getElementById('totalAssetValue').textContent = isConnected ? formatUSD(totalValue) : '$--';
         }
 
         document.addEventListener('walletConnected', function() {
             refreshAssets();
         });
         document.addEventListener('walletDisconnected', function() {
-            document.getElementById('totalAssetValue').textContent = '$--';
-            var container = document.getElementById('waTokenList');
-            if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
+            // 断开后显示默认列表（余额清空）
+            refreshAssets();
         });
 
+        // 初始加载：无论如何都先渲染默认列表
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(function() {
-                    if (window.web3 && window.currentAccount) {
-                        refreshAssets();
-                    } else {
-                        var container = document.getElementById('waTokenList');
-                        if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
-                    }
-                }, 500);
+                refreshAssets();
             });
         } else {
-            setTimeout(function() {
-                if (window.web3 && window.currentAccount) {
-                    refreshAssets();
-                } else {
-                    var container = document.getElementById('waTokenList');
-                    if (container) container.innerHTML = '<div class="placeholder-text">请先连接钱包</div>';
-                }
-            }, 500);
+            refreshAssets();
         }
 
+        // 每30秒刷新一次（连接时）
         setInterval(function() {
-            if (window.currentAccount) {
-                refreshAssets();
-            }
+            refreshAssets();
         }, 30000);
     })();
     </script>
