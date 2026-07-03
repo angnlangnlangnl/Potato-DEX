@@ -1,11 +1,598 @@
 <div id="page-ecosystem" class="page-container">
     <style>
-        .page-placeholder {
-            text-align: center;
-            padding: 40px 20px;
-            color: #a3adc9;
+        /* ========== OTC P2P 样式（已适配 Potato DEX 暗色主题） ========== */
+        .otc-container {
+            --otc-bg: transparent;
+            --otc-card-bg: rgba(18,22,40,0.8);
+            --otc-card-alt: rgba(30,35,55,0.9);
+            --otc-text-primary: #EAECF0;
+            --otc-text-secondary: #8E94B2;
+            --otc-text-tertiary: #a3adc9;
+            --otc-color-green: #4ecca3;
+            --otc-color-red: #e94560;
+            --otc-color-yellow: #f0b90b;
+            --otc-border: rgba(255,255,255,0.1);
+            padding: 0;
+            color: var(--otc-text-primary);
             font-size: 14px;
         }
+
+        .otc-container .otc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 14px;
+        }
+        .otc-container .otc-header-title {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .otc-container .otc-nav-item {
+            color: var(--otc-text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .otc-container .otc-nav-item.active {
+            color: var(--otc-text-primary);
+            font-weight: 600;
+        }
+
+        .otc-container .otc-action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 14px;
+        }
+        .otc-container .otc-toggle-group {
+            display: flex;
+            background: var(--otc-card-bg);
+            border-radius: 20px;
+            padding: 3px;
+            border: 1px solid var(--otc-border);
+        }
+        .otc-container .otc-toggle-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 18px;
+            background: transparent;
+            color: var(--otc-text-secondary);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .otc-container .otc-toggle-btn.active {
+            background: #f0b90b;
+            color: #0b0f1a;
+        }
+
+        .otc-container .otc-currency-wrap {
+            position: relative;
+        }
+        .otc-container .otc-currency-btn {
+            background: transparent;
+            border: 1px solid var(--otc-border);
+            color: var(--otc-text-primary);
+            padding: 5px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .otc-container .otc-currency-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 6px;
+            background: var(--otc-card-bg);
+            border: 1px solid var(--otc-border);
+            border-radius: 8px;
+            list-style: none;
+            padding: 4px 0;
+            min-width: 80px;
+            display: none;
+            z-index: 50;
+            backdrop-filter: blur(12px);
+        }
+        .otc-container .otc-currency-dropdown.active { display: block; }
+        .otc-container .otc-currency-dropdown li {
+            padding: 10px 16px;
+            color: var(--otc-text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .otc-container .otc-filter-bar {
+            display: flex;
+            gap: 14px;
+            padding-bottom: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .otc-container .otc-filter-item {
+            color: var(--otc-text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .otc-container .otc-filter-item.active { color: var(--otc-color-green); }
+
+        .otc-container .otc-pay-wrap {
+            position: relative;
+            z-index: 10;
+        }
+        .otc-container .otc-pay-trigger {
+            color: var(--otc-text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .otc-container .otc-pay-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 6px;
+            background: var(--otc-card-bg);
+            border: 1px solid var(--otc-border);
+            border-radius: 8px;
+            list-style: none;
+            padding: 4px 0;
+            min-width: 110px;
+            display: none;
+            z-index: 50;
+            backdrop-filter: blur(12px);
+        }
+        .otc-container .otc-pay-dropdown.active { display: block; }
+        .otc-container .otc-pay-dropdown li {
+            padding: 10px 16px;
+            color: var(--otc-text-primary);
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .otc-container .otc-list-view {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .otc-container .otc-card {
+            background: var(--otc-card-bg);
+            border: 1px solid var(--otc-border);
+            border-radius: 14px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            backdrop-filter: blur(8px);
+        }
+        .otc-container .otc-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .otc-container .otc-seller-name {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
+        .otc-container .otc-tags {
+            display: flex;
+            gap: 4px;
+        }
+        .otc-container .otc-tag {
+            background: var(--otc-card-alt);
+            color: #c5cbd6;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        .otc-container .otc-tag.gold {
+            background: rgba(240,185,11,0.15);
+            color: var(--otc-color-yellow);
+        }
+        .otc-container .otc-order-stats {
+            font-size: 11px;
+            color: var(--otc-text-secondary);
+        }
+        .otc-container .otc-price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .otc-container .otc-price-left {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .otc-container .otc-price {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--otc-text-primary);
+        }
+        .otc-container .otc-unit {
+            font-size: 13px;
+            color: var(--otc-text-secondary);
+        }
+        .otc-container .otc-price-right-pay {
+            font-size: 13px;
+            color: var(--otc-text-primary);
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .otc-container .otc-limit-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .otc-container .otc-limit-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex: 1;
+        }
+        .otc-container .otc-limit-text {
+            font-size: 11px;
+            color: var(--otc-text-secondary);
+        }
+        .otc-container .otc-limit-text span {
+            color: var(--otc-text-primary);
+        }
+        .otc-container .otc-meta-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+        .otc-container .otc-time-limit {
+            font-size: 11px;
+            color: var(--otc-text-secondary);
+        }
+        .otc-container .otc-action-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 4px;
+        }
+        .otc-container .otc-buy-btn {
+            background: var(--otc-color-green);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .otc-container .otc-sell-btn {
+            background: var(--otc-color-red);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
     </style>
-    <div class="page-placeholder">生态页面内容已移除vvvvv/div>
+
+    <div class="otc-container">
+        <!-- Header -->
+        <div class="otc-header">
+            <div class="otc-header-title">
+                <span class="otc-nav-item active">OTC交易</span>
+                <span class="otc-nav-item">订单详情</span>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="otc-action-bar">
+            <div class="otc-toggle-group" id="otcToggleGroup">
+                <button class="otc-toggle-btn active" data-target="buy">我要买</button>
+                <button class="otc-toggle-btn" data-target="sell">我要卖</button>
+            </div>
+            <div class="otc-currency-wrap" id="otcCurrencyWrap">
+                <button class="otc-currency-btn" id="otcCurrencyBtn">CNY ▾</button>
+                <ul class="otc-currency-dropdown" id="otcCurrencyDropdown">
+                    <li data-value="CNY">CNY</li>
+                    <li data-value="USD">USD</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="otc-filter-bar">
+            <div class="otc-filter-item active">USDT ▾</div>
+            <div class="otc-filter-item">金额 ▾</div>
+            <div class="otc-pay-wrap" id="otcPayWrap">
+                <div class="otc-pay-trigger" id="otcPayBtn">支付 ▾</div>
+                <ul class="otc-pay-dropdown" id="otcPayDropdown">
+                    <li data-value="微信">微信</li>
+                    <li data-value="支付宝">支付宝</li>
+                    <li data-value="银行借记卡">银行借记卡</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 我要买 列表 -->
+        <div class="otc-list-view" id="otcBuyList">
+            <div class="otc-card">
+                <div class="otc-card-top">
+                    <div class="otc-seller-name">
+                        遥遥领先-五年老店-安全零冻
+                        <div class="otc-tags">
+                            <span class="otc-tag gold">保证金</span>
+                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="otc-order-stats">交易: 9860 订单 (100.00%)</div>
+                <div class="otc-price-row">
+                    <div class="otc-price-left">
+                        <span class="otc-price">¥6.77</span>
+                        <span class="otc-unit">/USDT</span>
+                    </div>
+                    <div class="otc-price-right-pay">支付宝</div>
+                </div>
+                <div class="otc-limit-row">
+                    <div class="otc-limit-info">
+                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
+                        <div class="otc-limit-text">限额 <span>400 - 799 CNY</span></div>
+                        <div class="otc-limit-text">可用 <span>289.93 USDT</span></div>
+                    </div>
+                    <div class="otc-meta-info">
+                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-buy-btn">买入</button>
+                </div>
+            </div>
+
+            <div class="otc-card">
+                <div class="otc-card-top">
+                    <div class="otc-seller-name">
+                        神盾严选专区100万单老商家
+                        <div class="otc-tags">
+                            <span class="otc-tag gold">保证金</span>
+                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="otc-order-stats">交易: 41904 订单 (100.00%)</div>
+                <div class="otc-price-row">
+                    <div class="otc-price-left">
+                        <span class="otc-price">¥6.77</span>
+                        <span class="otc-unit">/USDT</span>
+                    </div>
+                    <div class="otc-price-right-pay">支付宝</div>
+                </div>
+                <div class="otc-limit-row">
+                    <div class="otc-limit-info">
+                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
+                        <div class="otc-limit-text">限额 <span>300 - 799 CNY</span></div>
+                        <div class="otc-limit-text">可用 <span>2,627.14 USDT</span></div>
+                    </div>
+                    <div class="otc-meta-info">
+                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-buy-btn">买入</button>
+                </div>
+            </div>
+
+            <div class="otc-card">
+                <div class="otc-card-top">
+                    <div class="otc-seller-name">
+                        聚优商行-24h
+                        <div class="otc-tags">
+                            <span class="otc-tag gold">保证金</span>
+                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="otc-order-stats">交易: 862 订单 (100.00%)</div>
+                <div class="otc-price-row">
+                    <div class="otc-price-left">
+                        <span class="otc-price">¥6.77</span>
+                        <span class="otc-unit">/USDT</span>
+                    </div>
+                    <div class="otc-price-right-pay">银行</div>
+                </div>
+                <div class="otc-limit-row">
+                    <div class="otc-limit-info">
+                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
+                        <div class="otc-limit-text">限额 <span>30,000 - 135,990 CNY</span></div>
+                        <div class="otc-limit-text">可用 <span>20,087.27 USDT</span></div>
+                    </div>
+                    <div class="otc-meta-info">
+                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-buy-btn">买入</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 我要卖 列表（默认隐藏） -->
+        <div class="otc-list-view" id="otcSellList" style="display:none;">
+            <div class="otc-card">
+                <div class="otc-card-top">
+                    <div class="otc-seller-name">
+                        遥遥领先-五年老店-安全零冻
+                        <div class="otc-tags">
+                            <span class="otc-tag gold">保证金</span>
+                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="otc-order-stats">交易: 9860 订单 (100.00%)</div>
+                <div class="otc-price-row">
+                    <div class="otc-price-left">
+                        <span class="otc-price">¥6.77</span>
+                        <span class="otc-unit">/USDT</span>
+                    </div>
+                    <div class="otc-price-right-pay">支付宝</div>
+                </div>
+                <div class="otc-limit-row">
+                    <div class="otc-limit-info">
+                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
+                        <div class="otc-limit-text">限额 <span>400 - 799 CNY</span></div>
+                        <div class="otc-limit-text">可用 <span>289.93 USDT</span></div>
+                    </div>
+                    <div class="otc-meta-info">
+                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-sell-btn">卖出</button>
+                </div>
+            </div>
+
+            <div class="otc-card">
+                <div class="otc-card-top">
+                    <div class="otc-seller-name">
+                        神盾严选专区100万单老商家
+                        <div class="otc-tags">
+                            <span class="otc-tag gold">保证金</span>
+                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="otc-order-stats">交易: 41904 订单 (100.00%)</div>
+                <div class="otc-price-row">
+                    <div class="otc-price-left">
+                        <span class="otc-price">¥6.77</span>
+                        <span class="otc-unit">/USDT</span>
+                    </div>
+                    <div class="otc-price-right-pay">支付宝</div>
+                </div>
+                <div class="otc-limit-row">
+                    <div class="otc-limit-info">
+                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
+                        <div class="otc-limit-text">限额 <span>300 - 799 CNY</span></div>
+                        <div class="otc-limit-text">可用 <span>2,627.14 USDT</span></div>
+                    </div>
+                    <div class="otc-meta-info">
+                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-sell-btn">卖出</button>
+                </div>
+            </div>
+
+            <div class="otc-card">
+                <div class="otc-card-top">
+                    <div class="otc-seller-name">
+                        聚优商行-24h
+                        <div class="otc-tags">
+                            <span class="otc-tag gold">保证金</span>
+                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="otc-order-stats">交易: 862 订单 (100.00%)</div>
+                <div class="otc-price-row">
+                    <div class="otc-price-left">
+                        <span class="otc-price">¥6.77</span>
+                        <span class="otc-unit">/USDT</span>
+                    </div>
+                    <div class="otc-price-right-pay">银行</div>
+                </div>
+                <div class="otc-limit-row">
+                    <div class="otc-limit-info">
+                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
+                        <div class="otc-limit-text">限额 <span>30,000 - 135,990 CNY</span></div>
+                        <div class="otc-limit-text">可用 <span>20,087.27 USDT</span></div>
+                    </div>
+                    <div class="otc-meta-info">
+                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-sell-btn">卖出</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var otcCurrencyWrap = document.getElementById('otcCurrencyWrap');
+        var otcCurrencyBtn = document.getElementById('otcCurrencyBtn');
+        var otcCurrencyDropdown = document.getElementById('otcCurrencyDropdown');
+        var otcPayWrap = document.getElementById('otcPayWrap');
+        var otcPayBtn = document.getElementById('otcPayBtn');
+        var otcPayDropdown = document.getElementById('otcPayDropdown');
+        var otcToggleGroup = document.getElementById('otcToggleGroup');
+        var otcBuyList = document.getElementById('otcBuyList');
+        var otcSellList = document.getElementById('otcSellList');
+
+        if (otcCurrencyBtn && otcCurrencyDropdown) {
+            otcCurrencyBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                otcCurrencyDropdown.classList.toggle('active');
+            });
+            otcCurrencyDropdown.querySelectorAll('li').forEach(function(li) {
+                li.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    otcCurrencyBtn.textContent = this.getAttribute('data-value') + ' ▾';
+                    otcCurrencyDropdown.classList.remove('active');
+                });
+            });
+        }
+
+        if (otcPayBtn && otcPayDropdown) {
+            otcPayBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                otcPayDropdown.classList.toggle('active');
+            });
+            otcPayDropdown.querySelectorAll('li').forEach(function(li) {
+                li.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    otcPayBtn.textContent = this.getAttribute('data-value') + ' ▾';
+                    otcPayDropdown.classList.remove('active');
+                });
+            });
+        }
+
+        if (otcToggleGroup) {
+            otcToggleGroup.querySelectorAll('.otc-toggle-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    otcToggleGroup.querySelectorAll('.otc-toggle-btn').forEach(function(b) { b.classList.remove('active'); });
+                    this.classList.add('active');
+                    var target = this.getAttribute('data-target');
+                    if (target === 'buy') {
+                        if (otcBuyList) otcBuyList.style.display = 'flex';
+                        if (otcSellList) otcSellList.style.display = 'none';
+                    } else {
+                        if (otcSellList) otcSellList.style.display = 'flex';
+                        if (otcBuyList) otcBuyList.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (otcCurrencyWrap && !otcCurrencyWrap.contains(e.target) && otcCurrencyDropdown) {
+                otcCurrencyDropdown.classList.remove('active');
+            }
+            if (otcPayWrap && !otcPayWrap.contains(e.target) && otcPayDropdown) {
+                otcPayDropdown.classList.remove('active');
+            }
+        });
+    })();
+    </script>
 </div>
