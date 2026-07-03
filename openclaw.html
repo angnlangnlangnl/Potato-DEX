@@ -1,319 +1,384 @@
 <div id="page-ecosystem" class="page-container">
     <style>
-        /* ========== OTC P2P 样式（已适配 Potato DEX 暗色主题） ========== */
-        .otc-container {
-            --otc-bg: transparent;
-            --otc-card-bg: rgba(18,22,40,0.8);
-            --otc-card-alt: rgba(30,35,55,0.9);
-            --otc-text-primary: #EAECF0;
-            --otc-text-secondary: #8E94B2;
-            --otc-text-tertiary: #a3adc9;
-            --otc-color-green: #4ecca3;
-            --otc-color-red: #e94560;
-            --otc-color-yellow: #f0b90b;
-            --otc-border: rgba(255,255,255,0.1);
-            padding: 0;
-            color: var(--otc-text-primary);
-            font-size: 14px;
+        /* OTC 页面 - 已修复手机适配，保留所有内容与布局 */
+        :root {
+            --bg-color: #141821;
+            --card-bg: #1b212d;
+            --card-alt: #222936;
+            --text-primary: #ffffff;
+            --text-secondary: #8e98b0;
+            --text-tertiary: #b7bdc9;
+            --color-green: #00c087;
+            --color-red: #f6465d;
+            --color-yellow: #f8d549;
+            --border-color: #2c3442;
         }
 
-        .otc-container .otc-header {
+        .otc-container {
+            width: 100%;
+            max-width: 100%; /* 关键修复：不再固定420px，完全适应父容器 */
+            min-height: 100vh;
+            padding: 12px 12px 20px;
+            position: relative;
+            color: var(--text-primary);
+            box-sizing: border-box;
+        }
+
+        .otc-header {
+            position: relative;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 14px;
-        }
-        .otc-container .otc-header-title {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-size: 16px;
+            padding-bottom: 16px;
+            font-size: 18px;
             font-weight: 500;
         }
-        .otc-container .otc-nav-item {
-            color: var(--otc-text-secondary);
-            cursor: pointer;
-            transition: color 0.2s;
+        .otc-header-left, .otc-header-right { display: flex; align-items: center; gap: 12px; }
+        
+        .otc-header-title {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            white-space: nowrap;
+            z-index: 1;
         }
-        .otc-container .otc-nav-item.active {
-            color: var(--otc-text-primary);
+        
+        .otc-header-title .otc-nav-item {
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: color 0.2s;
+            cursor: pointer;
+        }
+        .otc-header-title .otc-nav-item.active {
+            color: var(--text-primary);
             font-weight: 600;
         }
 
-        .otc-container .otc-action-bar {
+        .otc-action-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 14px;
+            padding-bottom: 16px;
         }
-        .otc-container .otc-toggle-group {
+        .otc-toggle-group {
             display: flex;
-            background: var(--otc-card-bg);
+            background: var(--card-bg);
             border-radius: 20px;
             padding: 3px;
-            border: 1px solid var(--otc-border);
+            cursor: pointer;
         }
-        .otc-container .otc-toggle-btn {
+        .otc-toggle-btn {
             padding: 8px 20px;
             border: none;
             border-radius: 18px;
             background: transparent;
-            color: var(--otc-text-secondary);
+            color: var(--text-secondary);
             font-weight: 600;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.2s;
+            white-space: nowrap;
         }
-        .otc-container .otc-toggle-btn.active {
-            background: #f0b90b;
-            color: #0b0f1a;
+        .otc-toggle-btn.active {
+            background: #ffffff;
+            color: #000000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .otc-container .otc-currency-wrap {
+        .otc-currency-wrapper {
             position: relative;
+            margin-left: auto;
         }
-        .otc-container .otc-currency-btn {
+        .otc-currency-btn {
             background: transparent;
-            border: 1px solid var(--otc-border);
-            color: var(--otc-text-primary);
-            padding: 5px 14px;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 4px 12px;
             border-radius: 16px;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
+            min-width: 70px;
+            text-align: center;
+            white-space: nowrap;
         }
-        .otc-container .otc-currency-dropdown {
+        .otc-currency-dropdown {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 8px);
             right: 0;
-            margin-top: 6px;
-            background: var(--otc-card-bg);
-            border: 1px solid var(--otc-border);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            list-style: none;
             padding: 4px 0;
-            min-width: 80px;
+            min-width: 100%;
+            list-style: none;
             display: none;
-            z-index: 50;
-            backdrop-filter: blur(12px);
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            overflow: hidden;
         }
-        .otc-container .otc-currency-dropdown.active { display: block; }
-        .otc-container .otc-currency-dropdown li {
+        .otc-currency-dropdown.active { display: block; }
+        .otc-currency-dropdown li {
             padding: 10px 16px;
-            color: var(--otc-text-primary);
-            font-size: 13px;
+            color: var(--text-primary);
+            font-size: 14px;
             cursor: pointer;
             text-align: center;
+            transition: background 0.15s;
         }
+        .otc-currency-dropdown li:hover { background: var(--card-alt); }
 
-        .otc-container .otc-filter-bar {
+        .otc-filter-bar {
             display: flex;
-            gap: 14px;
-            padding-bottom: 14px;
+            gap: 12px;
+            padding-bottom: 16px;
+            flex-wrap: nowrap;
+            overflow-x: auto; /* 允许内部横向滚动，但整体容器不溢出 */
+            -webkit-overflow-scrolling: touch;
             align-items: center;
-            flex-wrap: wrap;
         }
-        .otc-container .otc-filter-item {
-            color: var(--otc-text-secondary);
-            font-size: 13px;
-            cursor: pointer;
+        .otc-filter-item {
             display: flex;
             align-items: center;
             gap: 4px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            flex-shrink: 0;
         }
-        .otc-container .otc-filter-item.active { color: var(--otc-color-green); }
-
-        .otc-container .otc-pay-wrap {
+        .otc-filter-item.active { color: var(--color-green); }
+        
+        .otc-pay-wrapper {
             position: relative;
-            z-index: 10;
-        }
-        .otc-container .otc-pay-trigger {
-            color: var(--otc-text-secondary);
-            font-size: 13px;
             cursor: pointer;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        .otc-pay-trigger {
+            color: var(--text-secondary);
+            font-size: 14px;
+            white-space: nowrap;
             display: flex;
             align-items: center;
             gap: 4px;
         }
-        .otc-container .otc-pay-dropdown {
+        .otc-pay-dropdown {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 8px);
             left: 0;
-            margin-top: 6px;
-            background: var(--otc-card-bg);
-            border: 1px solid var(--otc-border);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            list-style: none;
             padding: 4px 0;
-            min-width: 110px;
+            min-width: 120px;
+            list-style: none;
             display: none;
-            z-index: 50;
-            backdrop-filter: blur(12px);
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            overflow: hidden;
         }
-        .otc-container .otc-pay-dropdown.active { display: block; }
-        .otc-container .otc-pay-dropdown li {
+        .otc-pay-dropdown.active { display: block; }
+        .otc-pay-dropdown li {
             padding: 10px 16px;
-            color: var(--otc-text-primary);
-            font-size: 13px;
+            color: var(--text-primary);
+            font-size: 14px;
             cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
         }
+        .otc-pay-dropdown li:hover { background: var(--card-alt); }
 
-        .otc-container .otc-list-view {
+        .otc-filter-check {
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .otc-filter-check input { accent-color: var(--color-green); margin-right: 6px; }
+
+        .otc-list-view {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
-        .otc-container .otc-card {
-            background: var(--otc-card-bg);
-            border: 1px solid var(--otc-border);
-            border-radius: 14px;
-            padding: 14px;
+
+        .otc-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 14px 16px;
             display: flex;
             flex-direction: column;
             gap: 6px;
-            backdrop-filter: blur(8px);
+            position: relative;
         }
-        .otc-container .otc-card-top {
+
+        .otc-card-top {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-        }
-        .otc-container .otc-seller-name {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-weight: 500;
-            font-size: 14px;
             flex-wrap: wrap;
         }
-        .otc-container .otc-tags {
+        .otc-seller-name {
             display: flex;
-            gap: 4px;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            font-size: 15px;
+            flex-wrap: wrap;
+            min-width: 0; /* 防止文字溢出 */
         }
-        .otc-container .otc-tag {
-            background: var(--otc-card-alt);
+        .otc-tags { display: flex; gap: 4px; flex-shrink: 0; }
+        .otc-tag {
+            background: var(--card-alt);
             color: #c5cbd6;
             font-size: 10px;
             padding: 2px 6px;
             border-radius: 10px;
+            white-space: nowrap;
         }
-        .otc-container .otc-tag.gold {
-            background: rgba(240,185,11,0.15);
-            color: var(--otc-color-yellow);
+        .otc-tag.gold { background: #333026; color: var(--color-yellow); }
+        
+        .otc-order-stats {
+            font-size: 12px;
+            color: var(--text-secondary);
         }
-        .otc-container .otc-order-stats {
-            font-size: 11px;
-            color: var(--otc-text-secondary);
-        }
-        .otc-container .otc-price-row {
+
+        .otc-price-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: 2px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
-        .otc-container .otc-price-left {
+        .otc-price-left {
             display: flex;
             align-items: baseline;
             gap: 4px;
+            flex-shrink: 0;
         }
-        .otc-container .otc-price {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--otc-text-primary);
-        }
-        .otc-container .otc-unit {
-            font-size: 13px;
-            color: var(--otc-text-secondary);
-        }
-        .otc-container .otc-price-right-pay {
-            font-size: 13px;
-            color: var(--otc-text-primary);
+        .otc-price { font-size: 26px; font-weight: 600; color: var(--text-primary); }
+        .otc-unit { font-size: 14px; color: var(--text-secondary); }
+
+        .otc-price-right-pay {
             display: flex;
             align-items: center;
             gap: 2px;
+            font-size: 14px;
+            color: var(--text-primary);
+            flex-shrink: 0;
         }
-        .otc-container .otc-limit-row {
+
+        .otc-limit-row {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            align-items: flex-start;
+            position: relative;
+            flex-wrap: wrap;
+            gap: 8px;
         }
-        .otc-container .otc-limit-info {
+        .otc-limit-info {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 4px;
             flex: 1;
+            min-width: 0;
         }
-        .otc-container .otc-limit-text {
-            font-size: 11px;
-            color: var(--otc-text-secondary);
-        }
-        .otc-container .otc-limit-text span {
-            color: var(--otc-text-primary);
-        }
-        .otc-container .otc-meta-info {
+        .otc-limit-text { font-size: 12px; color: var(--text-secondary); }
+        .otc-limit-text span { color: var(--text-primary); }
+        
+        .otc-meta-info {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 4px;
+            margin-left: auto;
+            justify-content: flex-start;
+            flex-shrink: 0;
         }
-        .otc-container .otc-time-limit {
+        .otc-time-limit {
             font-size: 11px;
-            color: var(--otc-text-secondary);
+            color: var(--text-secondary);
+            white-space: nowrap;
         }
-        .otc-container .otc-action-row {
+
+        .otc-action-row {
+            margin-left: auto;
+            margin-top: 8px;
             display: flex;
             justify-content: flex-end;
-            margin-top: 0;
         }
-        .otc-container .otc-buy-btn {
-            background: var(--otc-color-green);
-            color: #fff;
+        
+        .otc-buy-btn {
+            background-color: var(--color-green);
+            color: #ffffff;
             border: none;
-            border-radius: 6px;
-            padding: 8px 24px;
+            border-radius: 4px;
+            padding: 8px 28px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
+            white-space: nowrap;
         }
-        .otc-container .otc-sell-btn {
-            background: var(--otc-color-red);
-            color: #fff;
+
+        .otc-sell-btn {
+            background-color: var(--color-red);
+            color: #ffffff;
             border: none;
-            border-radius: 6px;
-            padding: 8px 24px;
+            border-radius: 4px;
+            padding: 8px 28px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
+            white-space: nowrap;
         }
+
+        .otc-icon { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
     </style>
 
     <div class="otc-container">
-        <!-- Header -->
+        
         <div class="otc-header">
+            <div class="otc-header-left">
+                <svg class="otc-icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </div>
             <div class="otc-header-title">
                 <span class="otc-nav-item active">OTC交易</span>
                 <span class="otc-nav-item">订单详情</span>
             </div>
+            <div class="otc-header-right">
+                <svg class="otc-icon" style="color:var(--text-secondary);" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+            </div>
         </div>
 
-        <!-- Action Bar -->
         <div class="otc-action-bar">
             <div class="otc-toggle-group" id="otcToggleGroup">
                 <button class="otc-toggle-btn active" data-target="buy">我要买</button>
                 <button class="otc-toggle-btn" data-target="sell">我要卖</button>
             </div>
-            <div class="otc-currency-wrap" id="otcCurrencyWrap">
+            <div class="otc-currency-wrapper" id="otcCurrencyWrapper">
                 <button class="otc-currency-btn" id="otcCurrencyBtn">CNY ▾</button>
                 <ul class="otc-currency-dropdown" id="otcCurrencyDropdown">
                     <li data-value="CNY">CNY</li>
                     <li data-value="USD">USD</li>
+                    <li data-value="GBP">GBP</li>
                 </ul>
             </div>
         </div>
 
-        <!-- Filter Bar -->
         <div class="otc-filter-bar">
-            <div class="otc-filter-item active">USDT ▾</div>
+            <div class="otc-filter-item active">
+                <span>T</span> USDT ▾
+            </div>
             <div class="otc-filter-item">金额 ▾</div>
-            <div class="otc-pay-wrap" id="otcPayWrap">
+            
+            <div class="otc-pay-wrapper" id="otcPayWrapper">
                 <div class="otc-pay-trigger" id="otcPayBtn">支付 ▾</div>
                 <ul class="otc-pay-dropdown" id="otcPayDropdown">
                     <li data-value="微信">微信</li>
@@ -321,28 +386,39 @@
                     <li data-value="银行借记卡">银行借记卡</li>
                 </ul>
             </div>
+            
+            <div class="otc-filter-check">
+                <input type="checkbox" checked> 神盾
+            </div>
+            <svg class="otc-icon" style="color:var(--text-secondary); margin-left:8px; width:18px;" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
         </div>
 
-        <!-- 我要买 列表 -->
         <div class="otc-list-view" id="otcBuyList">
             <div class="otc-card">
                 <div class="otc-card-top">
                     <div class="otc-seller-name">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
                         遥遥领先-五年老店-安全零冻
                         <div class="otc-tags">
                             <span class="otc-tag gold">保证金</span>
                             <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
                         </div>
                     </div>
+                    <svg style="width:32px; height:32px;" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="rgba(114, 106, 255, 0.3)"/></svg>
                 </div>
                 <div class="otc-order-stats">交易: 9860 订单 (100.00%)</div>
+                
                 <div class="otc-price-row">
                     <div class="otc-price-left">
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">支付宝</div>
+                    <div class="otc-price-right-pay">
+                        <span>支付宝</span>
+                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    </div>
                 </div>
+
                 <div class="otc-limit-row">
                     <div class="otc-limit-info">
                         <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
@@ -352,15 +428,16 @@
                     <div class="otc-meta-info">
                         <div class="otc-time-limit">🕒 15 分钟</div>
                     </div>
-                    <div class="otc-action-row">
-                        <button class="otc-buy-btn">买入</button>
-                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-buy-btn">买入</button>
                 </div>
             </div>
 
             <div class="otc-card">
                 <div class="otc-card-top">
                     <div class="otc-seller-name">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
                         神盾严选专区100万单老商家
                         <div class="otc-tags">
                             <span class="otc-tag gold">保证金</span>
@@ -369,13 +446,18 @@
                     </div>
                 </div>
                 <div class="otc-order-stats">交易: 41904 订单 (100.00%)</div>
+                
                 <div class="otc-price-row">
                     <div class="otc-price-left">
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">支付宝</div>
+                    <div class="otc-price-right-pay">
+                        <span>支付宝</span>
+                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    </div>
                 </div>
+
                 <div class="otc-limit-row">
                     <div class="otc-limit-info">
                         <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
@@ -385,15 +467,16 @@
                     <div class="otc-meta-info">
                         <div class="otc-time-limit">🕒 15 分钟</div>
                     </div>
-                    <div class="otc-action-row">
-                        <button class="otc-buy-btn">买入</button>
-                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-buy-btn">买入</button>
                 </div>
             </div>
 
             <div class="otc-card">
                 <div class="otc-card-top">
                     <div class="otc-seller-name">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
                         聚优商行-24h
                         <div class="otc-tags">
                             <span class="otc-tag gold">保证金</span>
@@ -402,13 +485,18 @@
                     </div>
                 </div>
                 <div class="otc-order-stats">交易: 862 订单 (100.00%)</div>
+                
                 <div class="otc-price-row">
                     <div class="otc-price-left">
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">银行</div>
+                    <div class="otc-price-right-pay">
+                        <span>银行</span>
+                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    </div>
                 </div>
+
                 <div class="otc-limit-row">
                     <div class="otc-limit-info">
                         <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
@@ -418,33 +506,39 @@
                     <div class="otc-meta-info">
                         <div class="otc-time-limit">🕒 15 分钟</div>
                     </div>
-                    <div class="otc-action-row">
-                        <button class="otc-buy-btn">买入</button>
-                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-buy-btn">买入</button>
                 </div>
             </div>
         </div>
 
-        <!-- 我要卖 列表（默认隐藏） -->
         <div class="otc-list-view" id="otcSellList" style="display:none;">
             <div class="otc-card">
                 <div class="otc-card-top">
                     <div class="otc-seller-name">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
                         遥遥领先-五年老店-安全零冻
                         <div class="otc-tags">
                             <span class="otc-tag gold">保证金</span>
                             <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
                         </div>
                     </div>
+                    <svg style="width:32px; height:32px;" viewBox="0 0 24 24" fill="none"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="rgba(114, 106, 255, 0.3)"/></svg>
                 </div>
                 <div class="otc-order-stats">交易: 9860 订单 (100.00%)</div>
+                
                 <div class="otc-price-row">
                     <div class="otc-price-left">
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">支付宝</div>
+                    <div class="otc-price-right-pay">
+                        <span>支付宝</span>
+                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    </div>
                 </div>
+
                 <div class="otc-limit-row">
                     <div class="otc-limit-info">
                         <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
@@ -454,15 +548,16 @@
                     <div class="otc-meta-info">
                         <div class="otc-time-limit">🕒 15 分钟</div>
                     </div>
-                    <div class="otc-action-row">
-                        <button class="otc-sell-btn">卖出</button>
-                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-sell-btn">卖出</button>
                 </div>
             </div>
 
             <div class="otc-card">
                 <div class="otc-card-top">
                     <div class="otc-seller-name">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
                         神盾严选专区100万单老商家
                         <div class="otc-tags">
                             <span class="otc-tag gold">保证金</span>
@@ -471,13 +566,18 @@
                     </div>
                 </div>
                 <div class="otc-order-stats">交易: 41904 订单 (100.00%)</div>
+                
                 <div class="otc-price-row">
                     <div class="otc-price-left">
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">支付宝</div>
+                    <div class="otc-price-right-pay">
+                        <span>支付宝</span>
+                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    </div>
                 </div>
+
                 <div class="otc-limit-row">
                     <div class="otc-limit-info">
                         <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
@@ -487,15 +587,16 @@
                     <div class="otc-meta-info">
                         <div class="otc-time-limit">🕒 15 分钟</div>
                     </div>
-                    <div class="otc-action-row">
-                        <button class="otc-sell-btn">卖出</button>
-                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-sell-btn">卖出</button>
                 </div>
             </div>
 
             <div class="otc-card">
                 <div class="otc-card-top">
                     <div class="otc-seller-name">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
                         聚优商行-24h
                         <div class="otc-tags">
                             <span class="otc-tag gold">保证金</span>
@@ -504,13 +605,18 @@
                     </div>
                 </div>
                 <div class="otc-order-stats">交易: 862 订单 (100.00%)</div>
+                
                 <div class="otc-price-row">
                     <div class="otc-price-left">
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">银行</div>
+                    <div class="otc-price-right-pay">
+                        <span>银行</span>
+                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    </div>
                 </div>
+
                 <div class="otc-limit-row">
                     <div class="otc-limit-info">
                         <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
@@ -520,77 +626,82 @@
                     <div class="otc-meta-info">
                         <div class="otc-time-limit">🕒 15 分钟</div>
                     </div>
-                    <div class="otc-action-row">
-                        <button class="otc-sell-btn">卖出</button>
-                    </div>
+                </div>
+                <div class="otc-action-row">
+                    <button class="otc-sell-btn">卖出</button>
                 </div>
             </div>
         </div>
+
     </div>
 
     <script>
     (function() {
-        var otcCurrencyWrap = document.getElementById('otcCurrencyWrap');
-        var otcCurrencyBtn = document.getElementById('otcCurrencyBtn');
-        var otcCurrencyDropdown = document.getElementById('otcCurrencyDropdown');
-        var otcPayWrap = document.getElementById('otcPayWrap');
-        var otcPayBtn = document.getElementById('otcPayBtn');
-        var otcPayDropdown = document.getElementById('otcPayDropdown');
-        var otcToggleGroup = document.getElementById('otcToggleGroup');
-        var otcBuyList = document.getElementById('otcBuyList');
-        var otcSellList = document.getElementById('otcSellList');
+        function $(id) { return document.getElementById(id); }
 
-        if (otcCurrencyBtn && otcCurrencyDropdown) {
-            otcCurrencyBtn.addEventListener('click', function(e) {
+        var currencyWrapper = $('otcCurrencyWrapper');
+        var currencyBtn = $('otcCurrencyBtn');
+        var currencyDropdown = $('otcCurrencyDropdown');
+        if (currencyBtn && currencyDropdown) {
+            currencyBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                otcCurrencyDropdown.classList.toggle('active');
+                currencyDropdown.classList.toggle('active');
             });
-            otcCurrencyDropdown.querySelectorAll('li').forEach(function(li) {
-                li.addEventListener('click', function(e) {
+            var currencyOptions = currencyDropdown.querySelectorAll('li');
+            currencyOptions.forEach(function(option) {
+                option.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    otcCurrencyBtn.textContent = this.getAttribute('data-value') + ' ▾';
-                    otcCurrencyDropdown.classList.remove('active');
+                    currencyBtn.innerHTML = this.getAttribute('data-value') + ' ▾';
+                    currencyDropdown.classList.remove('active');
                 });
             });
         }
 
-        if (otcPayBtn && otcPayDropdown) {
-            otcPayBtn.addEventListener('click', function(e) {
+        var payWrapper = $('otcPayWrapper');
+        var payBtn = $('otcPayBtn');
+        var payDropdown = $('otcPayDropdown');
+        if (payBtn && payDropdown) {
+            payBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                otcPayDropdown.classList.toggle('active');
+                payDropdown.classList.toggle('active');
             });
-            otcPayDropdown.querySelectorAll('li').forEach(function(li) {
-                li.addEventListener('click', function(e) {
+            var payOptions = payDropdown.querySelectorAll('li');
+            payOptions.forEach(function(option) {
+                option.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    otcPayBtn.textContent = this.getAttribute('data-value') + ' ▾';
-                    otcPayDropdown.classList.remove('active');
+                    payBtn.innerHTML = this.getAttribute('data-value') + ' ▾';
+                    payDropdown.classList.remove('active');
                 });
             });
         }
 
-        if (otcToggleGroup) {
-            otcToggleGroup.querySelectorAll('.otc-toggle-btn').forEach(function(btn) {
+        var toggleGroup = $('otcToggleGroup');
+        var buyList = $('otcBuyList');
+        var sellList = $('otcSellList');
+        if (toggleGroup) {
+            var toggleBtns = toggleGroup.querySelectorAll('.otc-toggle-btn');
+            toggleBtns.forEach(function(btn) {
                 btn.addEventListener('click', function() {
-                    otcToggleGroup.querySelectorAll('.otc-toggle-btn').forEach(function(b) { b.classList.remove('active'); });
+                    toggleBtns.forEach(function(b) { b.classList.remove('active'); });
                     this.classList.add('active');
                     var target = this.getAttribute('data-target');
                     if (target === 'buy') {
-                        if (otcBuyList) otcBuyList.style.display = 'flex';
-                        if (otcSellList) otcSellList.style.display = 'none';
-                    } else {
-                        if (otcSellList) otcSellList.style.display = 'flex';
-                        if (otcBuyList) otcBuyList.style.display = 'none';
+                        if (buyList) buyList.style.display = 'flex';
+                        if (sellList) sellList.style.display = 'none';
+                    } else if (target === 'sell') {
+                        if (sellList) sellList.style.display = 'flex';
+                        if (buyList) buyList.style.display = 'none';
                     }
                 });
             });
         }
 
         document.addEventListener('click', function(e) {
-            if (otcCurrencyWrap && !otcCurrencyWrap.contains(e.target) && otcCurrencyDropdown) {
-                otcCurrencyDropdown.classList.remove('active');
+            if (currencyWrapper && !currencyWrapper.contains(e.target)) {
+                if (currencyDropdown) currencyDropdown.classList.remove('active');
             }
-            if (otcPayWrap && !otcPayWrap.contains(e.target) && otcPayDropdown) {
-                otcPayDropdown.classList.remove('active');
+            if (payWrapper && !payWrapper.contains(e.target)) {
+                if (payDropdown) payDropdown.classList.remove('active');
             }
         });
     })();
