@@ -37,8 +37,8 @@
         .otc-header-title {
             position: absolute;
             left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
+            top: 10px;                        /* 上移与右侧图标水平对齐 */
+            transform: translate(-50%, -50%); /* 保持水平居中，垂直方向配合 top */
             display: flex;
             align-items: center;
             gap: 12px;
@@ -71,7 +71,7 @@
             cursor: pointer;
         }
         .otc-toggle-btn {
-            padding: 8px 20px;
+            padding: 5px 20px;                /* 高度缩小，宽度不变 */
             border: none;
             border-radius: 18px;
             background: transparent;
