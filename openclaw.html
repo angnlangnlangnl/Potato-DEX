@@ -1,6 +1,5 @@
 <div id="page-ecosystem" class="page-container">
     <style>
-        /* OTC 页面 - 已修复手机适配，保留所有内容与布局 */
         :root {
             --bg-color: #141821;
             --card-bg: #1b212d;
@@ -16,9 +15,9 @@
 
         .otc-container {
             width: 100%;
-            max-width: 100%; /* 关键修复：不再固定420px，完全适应父容器 */
+            max-width: 100%;
             min-height: 100vh;
-            padding: 12px 12px 20px;
+            padding: 12px 0 20px;   /* 去掉左右内边距 */
             position: relative;
             color: var(--text-primary);
             box-sizing: border-box;
@@ -29,7 +28,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 16px;
+            padding: 0 12px 16px;   /* 左右留白移至内部 */
             font-size: 18px;
             font-weight: 500;
         }
@@ -62,7 +61,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 16px;
+            padding: 0 12px 16px;   /* 左右留白 */
         }
         .otc-toggle-group {
             display: flex;
@@ -134,9 +133,9 @@
         .otc-filter-bar {
             display: flex;
             gap: 12px;
-            padding-bottom: 16px;
+            padding: 0 12px 16px;   /* 左右留白 */
             flex-wrap: nowrap;
-            overflow-x: auto; /* 允许内部横向滚动，但整体容器不溢出 */
+            overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             align-items: center;
         }
@@ -215,7 +214,6 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            position: relative;
         }
 
         .otc-card-top {
@@ -231,7 +229,7 @@
             font-weight: 500;
             font-size: 15px;
             flex-wrap: wrap;
-            min-width: 0; /* 防止文字溢出 */
+            min-width: 0;
         }
         .otc-tags { display: flex; gap: 4px; flex-shrink: 0; }
         .otc-tag {
@@ -252,9 +250,8 @@
         .otc-price-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-top: 2px;
-            flex-wrap: wrap;
             gap: 8px;
         }
         .otc-price-left {
@@ -266,21 +263,30 @@
         .otc-price { font-size: 26px; font-weight: 600; color: var(--text-primary); }
         .otc-unit { font-size: 14px; color: var(--text-secondary); }
 
+        .otc-price-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0;
+        }
         .otc-price-right-pay {
             display: flex;
             align-items: center;
             gap: 2px;
             font-size: 14px;
             color: var(--text-primary);
-            flex-shrink: 0;
+        }
+        .otc-pay-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
         }
 
         .otc-limit-row {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            position: relative;
-            flex-wrap: wrap;
+            align-items: flex-end;
             gap: 8px;
         }
         .otc-limit-info {
@@ -292,27 +298,11 @@
         }
         .otc-limit-text { font-size: 12px; color: var(--text-secondary); }
         .otc-limit-text span { color: var(--text-primary); }
-        
-        .otc-meta-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            margin-left: auto;
-            justify-content: flex-start;
-            flex-shrink: 0;
-        }
-        .otc-time-limit {
-            font-size: 11px;
-            color: var(--text-secondary);
-            white-space: nowrap;
-        }
 
         .otc-action-row {
-            margin-left: auto;
-            margin-top: 8px;
             display: flex;
-            justify-content: flex-end;
+            align-items: flex-end;
+            flex-shrink: 0;
         }
         
         .otc-buy-btn {
@@ -320,11 +310,12 @@
             color: #ffffff;
             border: none;
             border-radius: 4px;
-            padding: 8px 28px;
+            padding: 5px 24px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
             white-space: nowrap;
+            line-height: 1.4;
         }
 
         .otc-sell-btn {
@@ -332,11 +323,12 @@
             color: #ffffff;
             border: none;
             border-radius: 4px;
-            padding: 8px 28px;
+            padding: 5px 24px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
             white-space: nowrap;
+            line-height: 1.4;
         }
 
         .otc-icon { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
@@ -413,9 +405,12 @@
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">
-                        <span>支付宝</span>
-                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    <div class="otc-price-right">
+                        <div class="otc-price-right-pay">
+                            <span>支付宝</span>
+                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        </div>
+                        <div class="otc-pay-time">🕒 15 分钟</div>
                     </div>
                 </div>
 
@@ -425,12 +420,9 @@
                         <div class="otc-limit-text">限额 <span>400 - 799 CNY</span></div>
                         <div class="otc-limit-text">可用 <span>289.93 USDT</span></div>
                     </div>
-                    <div class="otc-meta-info">
-                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    <div class="otc-action-row">
+                        <button class="otc-buy-btn">买入</button>
                     </div>
-                </div>
-                <div class="otc-action-row">
-                    <button class="otc-buy-btn">买入</button>
                 </div>
             </div>
 
@@ -452,9 +444,12 @@
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">
-                        <span>支付宝</span>
-                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    <div class="otc-price-right">
+                        <div class="otc-price-right-pay">
+                            <span>支付宝</span>
+                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        </div>
+                        <div class="otc-pay-time">🕒 15 分钟</div>
                     </div>
                 </div>
 
@@ -464,12 +459,9 @@
                         <div class="otc-limit-text">限额 <span>300 - 799 CNY</span></div>
                         <div class="otc-limit-text">可用 <span>2,627.14 USDT</span></div>
                     </div>
-                    <div class="otc-meta-info">
-                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    <div class="otc-action-row">
+                        <button class="otc-buy-btn">买入</button>
                     </div>
-                </div>
-                <div class="otc-action-row">
-                    <button class="otc-buy-btn">买入</button>
                 </div>
             </div>
 
@@ -491,9 +483,12 @@
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">
-                        <span>银行</span>
-                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    <div class="otc-price-right">
+                        <div class="otc-price-right-pay">
+                            <span>银行</span>
+                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        </div>
+                        <div class="otc-pay-time">🕒 15 分钟</div>
                     </div>
                 </div>
 
@@ -503,12 +498,9 @@
                         <div class="otc-limit-text">限额 <span>30,000 - 135,990 CNY</span></div>
                         <div class="otc-limit-text">可用 <span>20,087.27 USDT</span></div>
                     </div>
-                    <div class="otc-meta-info">
-                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    <div class="otc-action-row">
+                        <button class="otc-buy-btn">买入</button>
                     </div>
-                </div>
-                <div class="otc-action-row">
-                    <button class="otc-buy-btn">买入</button>
                 </div>
             </div>
         </div>
@@ -533,9 +525,12 @@
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">
-                        <span>支付宝</span>
-                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    <div class="otc-price-right">
+                        <div class="otc-price-right-pay">
+                            <span>支付宝</span>
+                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        </div>
+                        <div class="otc-pay-time">🕒 15 分钟</div>
                     </div>
                 </div>
 
@@ -545,12 +540,9 @@
                         <div class="otc-limit-text">限额 <span>400 - 799 CNY</span></div>
                         <div class="otc-limit-text">可用 <span>289.93 USDT</span></div>
                     </div>
-                    <div class="otc-meta-info">
-                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    <div class="otc-action-row">
+                        <button class="otc-sell-btn">卖出</button>
                     </div>
-                </div>
-                <div class="otc-action-row">
-                    <button class="otc-sell-btn">卖出</button>
                 </div>
             </div>
 
@@ -572,9 +564,12 @@
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">
-                        <span>支付宝</span>
-                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    <div class="otc-price-right">
+                        <div class="otc-price-right-pay">
+                            <span>支付宝</span>
+                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        </div>
+                        <div class="otc-pay-time">🕒 15 分钟</div>
                     </div>
                 </div>
 
@@ -584,12 +579,9 @@
                         <div class="otc-limit-text">限额 <span>300 - 799 CNY</span></div>
                         <div class="otc-limit-text">可用 <span>2,627.14 USDT</span></div>
                     </div>
-                    <div class="otc-meta-info">
-                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    <div class="otc-action-row">
+                        <button class="otc-sell-btn">卖出</button>
                     </div>
-                </div>
-                <div class="otc-action-row">
-                    <button class="otc-sell-btn">卖出</button>
                 </div>
             </div>
 
@@ -611,9 +603,12 @@
                         <span class="otc-price">¥6.77</span>
                         <span class="otc-unit">/USDT</span>
                     </div>
-                    <div class="otc-price-right-pay">
-                        <span>银行</span>
-                        <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                    <div class="otc-price-right">
+                        <div class="otc-price-right-pay">
+                            <span>银行</span>
+                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
+                        </div>
+                        <div class="otc-pay-time">🕒 15 分钟</div>
                     </div>
                 </div>
 
@@ -623,12 +618,9 @@
                         <div class="otc-limit-text">限额 <span>30,000 - 135,990 CNY</span></div>
                         <div class="otc-limit-text">可用 <span>20,087.27 USDT</span></div>
                     </div>
-                    <div class="otc-meta-info">
-                        <div class="otc-time-limit">🕒 15 分钟</div>
+                    <div class="otc-action-row">
+                        <button class="otc-sell-btn">卖出</button>
                     </div>
-                </div>
-                <div class="otc-action-row">
-                    <button class="otc-sell-btn">卖出</button>
                 </div>
             </div>
         </div>
