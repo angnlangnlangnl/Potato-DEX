@@ -1,21 +1,202 @@
-<div id="page-ecosystem" class="page-container">
+<div id="page-markets" class="page-container">
     <style>
-        .glass-card { 
-            background: rgba(18,22,40,0.7); 
-            backdrop-filter: blur(16px); 
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255,255,255,0.1); 
-            border-radius: 16px; 
-            padding: 20px; 
-            margin-bottom: 15px; 
-            color: #ccd6f0; 
+        .market-page {
+            --m-bg-primary: #0F111D;
+            --m-bg-card: #1A1D2E;
+            --m-bg-search: #1A1D2E;
+            --m-bg-tag: #252A40;
+            --m-text-white: #EAECF0;
+            --m-text-grey: #6B7394;
+            --m-text-light-grey: #8E94B2;
+            --m-divider: #1E2139;
+            --m-loss-red: #E8455B;
+            --m-gain-green: #26A69A;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--m-text-white);
+            -webkit-font-smoothing: antialiased;
         }
-        .title-main { color: #f0b90b; font-size: 18px; font-weight: bold; text-align: center; }
-        .desc { color: #a3adc9; font-size: 14px; text-align: center; margin-top: 10px; }
+        .market-page .m-header { padding: 12px 0; }
+        .market-page .m-search-bar {
+            display: flex; align-items: center; background: var(--m-bg-search);
+            border-radius: 8px; padding: 0 12px; height: 40px;
+        }
+        .market-page .m-search-bar input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: var(--m-text-white); font-size: 14px;
+        }
+        .market-page .m-search-bar input::placeholder { color: var(--m-text-grey); }
+        .market-page .m-search-bar .m-icon { color: var(--m-text-grey); font-size: 18px; margin: 0 4px; }
+
+        .market-page .m-table-header {
+            display: flex; padding: 8px 0; font-size: 12px; color: var(--m-text-light-grey);
+            border-bottom: 0.5px solid var(--m-divider);
+        }
+        .market-page .m-col-name { flex: 4; display: flex; align-items: center; gap: 4px; }
+        .market-page .m-col-price { flex: 3; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+        .market-page .m-col-change { flex: 2; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+
+        .market-page .m-coin-list { padding: 0; }
+        .market-page .m-coin-item {
+            display: flex; padding: 14px 0; border-bottom: 0.5px solid var(--m-divider);
+            transition: background 0.2s;
+        }
+        .market-page .m-coin-item:nth-child(even) { background-color: #131626; }
+
+        .market-page .m-coin-name-section { flex: 4; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+        .market-page .m-coin-symbol-row { display: flex; align-items: center; gap: 6px; }
+        .market-page .m-coin-symbol { font-size: 15px; font-weight: 500; }
+        .market-page .m-leverage-tag {
+            font-size: 10px; background: var(--m-bg-tag); color: var(--m-text-light-grey);
+            padding: 1px 5px; border-radius: 4px;
+        }
+        .market-page .m-coin-volume { font-size: 12px; color: var(--m-text-grey); }
+
+        .market-page .m-coin-price-section { flex: 3; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 4px; }
+        .market-page .m-coin-price { font-size: 15px; font-weight: 500; }
+        .market-page .m-coin-cny { font-size: 12px; color: var(--m-text-light-grey); }
+
+        .market-page .m-coin-change-section { flex: 2; display: flex; align-items: center; justify-content: flex-end; }
+        .market-page .m-change-badge {
+            padding: 4px 0; border-radius: 4px; font-size: 13px; font-weight: 500;
+            text-align: center; width: 70px; color: var(--m-text-white);
+        }
+        .market-page .m-change-badge.up { background: var(--m-gain-green); }
+        .market-page .m-change-badge.down { background: var(--m-loss-red); }
     </style>
 
-    <div class="glass-card">
-        <div class="title-main">OTC 功能</div>
-        <div class="desc">场外交易功能正在开发中，敬请期待。</div>
+    <div class="market-page">
+        <div class="m-header">
+            <div class="m-search-bar">
+                <span class="m-icon">🔍</span>
+                <input type="text" placeholder="搜索币种/币对/合约" readonly>
+                <span class="m-icon">⋯</span>
+            </div>
+        </div>
+
+        <div class="m-table-header">
+            <div class="m-col-name">名称 ⇅ 成交额</div>
+            <div class="m-col-price">最新价格 ⇅</div>
+            <div class="m-col-change">24h涨跌 ⇅</div>
+        </div>
+
+        <div class="m-coin-list" id="mCoinList">
+            <div style="text-align: center; padding: 40px; color: var(--m-text-light-grey);">正在加载 BSC 实时行情数据...</div>
+        </div>
     </div>
+
+    <script>
+    (function() {
+        var SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'SOLUSDT', 'DOGEUSDT'];
+        var CNY_RATE = 7.25;
+        var refreshTimer = null;
+        var isPageActive = true;
+
+        function renderCoins(dataList) {
+            var container = document.getElementById('mCoinList');
+            if (!container) return;
+            container.innerHTML = '';
+
+            dataList.forEach(function(coin) {
+                var rawPrice = parseFloat(coin.lastPrice);
+                var changePercent = parseFloat(coin.priceChangePercent);
+                var isUp = changePercent >= 0;
+                var quoteVol = parseFloat(coin.quoteVolume);
+
+                var priceStr = rawPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+                if (rawPrice < 0.01) priceStr = rawPrice.toFixed(8);
+
+                var changeStr = changePercent.toFixed(2) + '%';
+                if (isUp) changeStr = '+' + changeStr;
+
+                var volStr = '';
+                if (quoteVol >= 100000000) {
+                    volStr = (quoteVol / 100000000).toFixed(2) + '亿';
+                } else if (quoteVol >= 10000) {
+                    volStr = (quoteVol / 10000).toFixed(2) + '万';
+                } else {
+                    volStr = quoteVol.toFixed(0);
+                }
+
+                var cnyStr = '≈ ¥' + (rawPrice * CNY_RATE).toFixed(2);
+                var displaySymbol = coin.symbol.replace('USDT', '/USDT');
+
+                var item = document.createElement('div');
+                item.className = 'm-coin-item';
+                item.innerHTML = 
+                    '<div class="m-coin-name-section">' +
+                        '<div class="m-coin-symbol-row">' +
+                            '<span class="m-coin-symbol">' + displaySymbol + '</span>' +
+                            '<span class="m-leverage-tag">10x</span>' +
+                        '</div>' +
+                        '<div class="m-coin-volume">' + volStr + '</div>' +
+                    '</div>' +
+                    '<div class="m-coin-price-section">' +
+                        '<div class="m-coin-price">' + priceStr + '</div>' +
+                        '<div class="m-coin-cny">' + cnyStr + '</div>' +
+                    '</div>' +
+                    '<div class="m-coin-change-section">' +
+                        '<div class="m-change-badge ' + (isUp ? 'up' : 'down') + '">' + changeStr + '</div>' +
+                    '</div>';
+                container.appendChild(item);
+            });
+        }
+
+        function fetchMarketData() {
+            if (!isPageActive) return;
+            var fetchPromises = SYMBOLS.map(function(symbol) {
+                return fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol)
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('API Request Failed');
+                        return res.json();
+                    });
+            });
+
+            Promise.all(fetchPromises)
+                .then(function(results) {
+                    if (!isPageActive) return;
+                    renderCoins(results);
+                })
+                .catch(function(error) {
+                    console.error('数据获取失败:', error);
+                    var container = document.getElementById('mCoinList');
+                    if (!container || !isPageActive) return;
+                    container.innerHTML = 
+                        '<div style="text-align: center; padding: 40px; color: var(--m-loss-red);">' +
+                            '⚠️ 数据加载失败，请检查网络后刷新重试<br>' +
+                            '<span style="font-size: 12px; color: var(--m-text-light-grey); margin-top:8px; display:block;">' + error.message + '</span>' +
+                        '</div>';
+                });
+        }
+
+        function startRefresh() {
+            isPageActive = true;
+            fetchMarketData();
+            refreshTimer = setInterval(function() {
+                if (document.getElementById('mCoinList')) {
+                    fetchMarketData();
+                } else {
+                    stopRefresh();
+                }
+            }, 10000);
+        }
+
+        function stopRefresh() {
+            isPageActive = false;
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+        }
+
+        document.addEventListener('walletDisconnected', stopRefresh);
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startRefresh);
+        } else {
+            startRefresh();
+        }
+    })();
+    </script>
 </div>
