@@ -17,40 +17,49 @@
 
   #page-ecosystem {
     background-color: #0e121b;
-    width: calc(100% + 30px);    /* 补偿父容器左右各15px的padding */
+    width: calc(100% + 30px);
     min-height: 100vh;
     padding: 12px 16px 20px;
-    margin-left: -15px;          /* 向左拉伸，铺满屏幕左边缘 */
-    margin-right: -15px;         /* 向右拉伸，铺满屏幕右边缘 */
+    margin-left: -15px;
+    margin-right: -15px;
     position: relative;
     color: var(--text-primary);
     overflow-x: hidden;
   }
 
+  /* 修改后的 header：flex 布局，所有项目底部对齐 */
   .header {
-    position: relative;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;       /* 底部对齐，使标题与铃铛底部水平 */
     padding-bottom: 16px;
     font-size: 18px;
     font-weight: 500;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;           /* 防止换行 */
   }
-  .header-left, .header-right { display: flex; align-items: center; gap: 12px; }
-  
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* 标题区域，占据中间空间，居中显示，且与其他元素底部对齐 */
   .header-title {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     gap: 12px;
     white-space: nowrap;
-    z-index: 1;
+    flex: 1;                    /* 占据剩余空间 */
+    justify-content: center;    /* 内部居中 */
   }
-  
+
   .header-title .nav-item {
     color: var(--text-secondary);
     font-weight: 500;
@@ -334,6 +343,7 @@
     cursor: pointer;
   }
 
+  /* 浮动按钮：独立于所有卡片，定位在右下角，不被任何容器包裹 */
   .floating-action {
     position: absolute;
     right: 16px;
@@ -359,10 +369,12 @@
   }
 </style>
 
+  <!-- 修改后的 header：标题与右侧铃铛底部水平对齐 -->
   <div class="header">
     <div class="header-left">
       <svg class="icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </div>
+    <!-- 标题区域（flex 居中） -->
     <div class="header-title">
       <span class="nav-item active">OTC交易</span>
       <span class="nav-item">订单详情</span>
@@ -557,6 +569,7 @@
     </div>
   </div>
 
+  <!-- 浮动按钮：独立于所有卡片容器 -->
   <div class="floating-action">
     <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
   </div>
