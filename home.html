@@ -1,5 +1,6 @@
 <div id="page-trade" class="page-container">
     <style>
+        /* 所有样式保持不变，仅新增或修改展示行的样式 */
         .glass-card { 
             background: rgba(18,22,40,0.7); 
             backdrop-filter: blur(16px); 
@@ -7,8 +8,8 @@
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px; 
             padding: 20px; 
-            margin-bottom: 15px;
-            color: #ccd6f0;
+            margin-bottom: 15px; 
+            color: #ccd6f0; 
             overflow: hidden;
         }
         .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; color: #f0b90b; }
@@ -114,21 +115,25 @@
             padding: 0;
             margin-bottom: 0;
         }
-        .price-row {
-            display: flex; align-items: center; background: #0d1125; border: 1px solid #2d325a;
-            border-radius: 12px; padding: 0 0 0 14px;
+        /* 新增：价格展示行 */
+        .price-display-row {
+            display: flex;
+            align-items: center;
+            background: #0d1125;
+            border: 1px solid #2d325a;
+            border-radius: 12px;
+            padding: 10px 14px;
+            color: #fff;
+            font-size: 14px;
         }
-        .price-row input {
-            flex: 1; background: transparent; border: none; color: #fff; font-size: 14px;
-            padding: 10px 0; outline: none; min-width: 0;
-        }
-        .price-calc {
-            color: #4ecca3; font-size: 13px; font-weight: 500; white-space: nowrap;
-            padding: 10px 14px; border-left: 1px solid #2d325a;
-            flex-shrink: 0;
+        .price-display-row .price-eq {
+            margin: 0 8px;
+            color: #4ecca3;
+            font-weight: 500;
         }
         .hide { display: none !important; }
 
+        /* 交易记录卡片样式保持不变 */
         .recent-trade-card { margin-top: 0; }
         .trade-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .trade-record-title { font-size: 16px; font-weight: bold; color: #f0b90b; }
@@ -145,18 +150,11 @@
             margin-top: 12px;
             display: none;
         }
-        .lp-trade-card .trade-record-header {
-            margin-bottom: 8px;
-        }
-        .lp-trade-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
+        .lp-trade-card .trade-record-header { margin-bottom: 8px; }
+        .lp-trade-list { max-height: 200px; overflow-y: auto; }
         .lp-trade-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; justify-content: space-between;
+            padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 12px;
         }
         .lp-trade-item:last-child { border-bottom: none; }
@@ -164,6 +162,7 @@
         .lp-trade-amount { color: #ccd6f0; }
     </style>
 
+    <!-- 兑换卡片（含 LP 视图） -->
     <div class="glass-card">
         <div class="dex-switch">
             <button class="dex-btn active" id="pancakeBtn" onclick="switchDEX('pancake')">
@@ -206,6 +205,7 @@
             <div class="price-info" id="rateInfo">--</div>
         </div>
 
+        <!-- 添加LP视图（修改了价格展示部分） -->
         <div id="lpView" class="hide">
             <div class="search-wrapper">
                 <input type="text" class="token-search" id="lpContractSearch" placeholder="输入代币合约地址搜索">
@@ -214,11 +214,10 @@
             <div class="lp-input-row">
                 <div class="lp-label-row">
                     <span class="lp-label">当前价格 (1 USDT = ? TOKEN)</span>
-                    <span style="color:#4ecca3; font-size:13px; font-weight:500;" id="lpCalcDisplay">1 USDT = -- TOKEN</span>
                 </div>
-                <div class="price-row">
-                    <input type="number" id="lpTokenPrice" placeholder="" step="any">
-                    <!-- 移除原来的 price-calc -->
+                <!-- 改为展示行 -->
+                <div class="price-display-row" id="lpPriceDisplay">
+                    1 USDT = <span class="price-eq">--</span> TOKEN
                 </div>
             </div>
             <div class="lp-input-row">
@@ -269,6 +268,7 @@
 
     <script>
     (function() {
+        // ==================== 配置 ====================
         var currentDEX = 'pancake';
         var ROUTERS = {
             pancake: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
@@ -318,6 +318,8 @@
 
         var lpTokenAddress = null;
         var lpTokenSymbol = 'TOKEN';
+        // 新增：存储当前价格（1 USDT = ? TOKEN）
+        var lpPriceRate = 0;
 
         var PCS_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2';
 
@@ -331,20 +333,14 @@
             }
         }
 
-        // 更新标签右侧计算器显示
-        function updateCalcDisplay(usdtAmount) {
-            var rate = parseFloat($('lpTokenPrice').value);
-            var display = $('lpCalcDisplay');
+        // 更新价格显示行
+        function updatePriceDisplay() {
+            var display = $('lpPriceDisplay');
             if (!display) return;
-            if (isNaN(rate) || rate <= 0) {
-                display.textContent = '1 USDT = -- ' + lpTokenSymbol;
-                return;
-            }
-            if (usdtAmount !== undefined && !isNaN(usdtAmount) && usdtAmount >= 0) {
-                var tokenAmt = usdtAmount * rate;
-                display.textContent = usdtAmount + ' USDT = ' + tokenAmt.toFixed(6) + ' ' + lpTokenSymbol;
+            if (lpPriceRate > 0) {
+                display.innerHTML = '1 USDT = <span class="price-eq">' + lpPriceRate.toFixed(6) + '</span> ' + lpTokenSymbol;
             } else {
-                display.textContent = '1 USDT = ' + rate.toFixed(6) + ' ' + lpTokenSymbol;
+                display.innerHTML = '1 USDT = <span class="price-eq">--</span> ' + lpTokenSymbol;
             }
         }
 
@@ -363,7 +359,7 @@
             document.getElementById('tabLP').classList.add('active');
             updateLPButton();
             updateLPBalances();
-            updateCalcDisplay();
+            updatePriceDisplay();
         };
 
         window.switchDEX = function(dex) {
@@ -542,7 +538,6 @@
             updateRate();
         };
 
-        // 上下交换输入框（不改变价格）
         window.swapLiquidityTokens = function() {
             var firstAmt = $('lpAmountFirst').value;
             var secondAmt = $('lpAmountSecond').value;
@@ -563,10 +558,10 @@
             var secondBtn = $('lpTokenBtnSecond').textContent;
             $('lpTokenBtnFirst').textContent = secondBtn;
             $('lpTokenBtnSecond').textContent = firstBtn;
-
-            // 更新计算器显示
-            updateCalcDisplay(parseFloat($('lpAmountFirst').value));
         };
+
+        // 其余函数保持不变，但移除所有与 lpTokenPrice 相关的代码
+        // 包括之前对 lpTokenPrice 的 addEventListener 全部删除
 
         function saveTradeRecord(record) {
             try {
@@ -748,7 +743,7 @@
         function updateLPTokenDisplay(symbol) {
             lpTokenSymbol = symbol || 'TOKEN';
             $('lpTokenBtnSecond').textContent = lpTokenSymbol;
-            updateCalcDisplay();
+            updatePriceDisplay();
         }
 
         async function fetchTokenPriceInUSDT(tokenAddr) {
@@ -856,12 +851,11 @@
 
                     var tokenPrice = await fetchTokenPriceInUSDT(addr);
                     if (tokenPrice > 0) {
-                        var rate = 1 / tokenPrice;
-                        $('lpTokenPrice').value = rate.toFixed(6);
-                        updateCalcDisplay();
-                        var ev = new Event('input', { bubbles: true });
-                        $('lpTokenPrice').dispatchEvent(ev);
+                        lpPriceRate = 1 / tokenPrice;
+                    } else {
+                        lpPriceRate = 0;
                     }
+                    updatePriceDisplay();
                     fetchPairSwaps(pair, symbol);
                 } else {
                     lpTokenAddress = addr;
@@ -869,11 +863,11 @@
                     parent.showToast('未找到与 USDT 的交易对，仍可尝试创建', 'info');
                     var tokenPrice2 = await fetchTokenPriceInUSDT(addr);
                     if (tokenPrice2 > 0) {
-                        var rate2 = 1 / tokenPrice2;
-                        $('lpTokenPrice').value = rate2.toFixed(6);
-                        updateCalcDisplay();
-                        $('lpTokenPrice').dispatchEvent(new Event('input', { bubbles: true }));
+                        lpPriceRate = 1 / tokenPrice2;
+                    } else {
+                        lpPriceRate = 0;
                     }
+                    updatePriceDisplay();
                     var pair2 = await factoryContract.methods.getPair(addr, WBNB).call();
                     if (pair2 !== '0x0000000000000000000000000000000000000000') {
                         fetchPairSwaps(pair2, symbol);
@@ -881,6 +875,9 @@
                 }
                 $('lpContractSearch').value = symbol;
                 updateLPBalances();
+                // 清空数量输入
+                $('lpAmountFirst').value = '';
+                $('lpAmountSecond').value = '';
             } catch (e) {
                 console.error(e);
                 parent.showToast('获取代币信息失败', 'error');
@@ -888,51 +885,34 @@
             }
         });
 
-        // 价格输入监听
-        $('lpTokenPrice').addEventListener('input', function() {
-            var rate = parseFloat(this.value);
-            if (!isNaN(rate) && rate > 0) {
-                var usdtAmt = parseFloat($('lpAmountFirst').value) || 0;
-                $('lpAmountSecond').value = (usdtAmt * rate).toFixed(6);
-                updateCalcDisplay(usdtAmt);
-            } else {
-                $('lpAmountSecond').value = '';
-                updateCalcDisplay(undefined);
-            }
-        });
-
+        // 数量输入联动（使用 lpPriceRate）
         $('lpAmountFirst').addEventListener('input', function() {
             var usdtAmt = parseFloat(this.value);
-            var rate = parseFloat($('lpTokenPrice').value);
-            if (!isNaN(usdtAmt) && !isNaN(rate) && rate > 0) {
-                $('lpAmountSecond').value = (usdtAmt * rate).toFixed(6);
-                updateCalcDisplay(usdtAmt);
+            if (!isNaN(usdtAmt) && lpPriceRate > 0) {
+                $('lpAmountSecond').value = (usdtAmt * lpPriceRate).toFixed(6);
             } else {
                 $('lpAmountSecond').value = '';
-                updateCalcDisplay(usdtAmt);
             }
         });
 
         $('lpAmountSecond').addEventListener('input', function() {
             var tokenAmt = parseFloat(this.value);
-            var rate = parseFloat($('lpTokenPrice').value);
-            if (!isNaN(tokenAmt) && !isNaN(rate) && rate > 0) {
-                var usdt = (tokenAmt / rate).toFixed(6);
-                $('lpAmountFirst').value = usdt;
-                updateCalcDisplay(parseFloat(usdt));
+            if (!isNaN(tokenAmt) && lpPriceRate > 0) {
+                $('lpAmountFirst').value = (tokenAmt / lpPriceRate).toFixed(6);
+            } else {
+                $('lpAmountFirst').value = '';
             }
         });
 
         window.addLiquidity = function() {
-            var rate = parseFloat($('lpTokenPrice').value);
             var usdt = $('lpAmountFirst').value;
             var tokenAmt = $('lpAmountSecond').value;
             if (!lpTokenAddress) {
                 parent.showToast('请先搜索并加载代币合约', 'error');
                 return;
             }
-            if (!rate || !usdt) {
-                parent.showToast('请输入价格和USDT数量', 'error');
+            if (!lpPriceRate || !usdt) {
+                parent.showToast('请输入USDT数量', 'error');
                 return;
             }
             parent.showToast(
