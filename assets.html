@@ -54,9 +54,9 @@
         .wa-asset-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
         .wa-asset-balance { font-size: 16px; font-weight: 500; color: #EAECF0; }
         .wa-asset-value { font-size: 14px; color: #8E94B2; }
-        .placeholder-text { text-align: center; padding: 30px; color: #a3adc9; }
     </style>
 
+    <!-- 总资产卡片 -->
     <div class="glass-card">
         <div class="flex-row">
             <div>
@@ -64,11 +64,12 @@
                 <div class="desc">基于链上真实余额计算</div>
             </div>
             <div>
-                <div class="stat-val" id="totalAssetValue">$--</div>
+                <div class="stat-val" id="totalAssetValue">$0.00</div>
             </div>
         </div>
     </div>
 
+    <!-- 资产列表 -->
     <div class="glass-card wallet-assets">
         <div class="wa-header">
             <span class="wa-tab">资产</span>
@@ -77,12 +78,16 @@
                 <span>+</span>
             </div>
         </div>
-        <div class="wa-asset-list" id="waTokenList"></div>
+        <div class="wa-asset-list" id="waTokenList">
+            <!-- 卡片由JS动态生成，始终显示 -->
+        </div>
     </div>
 
     <script>
     (function() {
+        // 默认必须显示的代币
         var DEFAULT_TOKENS = ['BNB', 'USDT', 'BTCB', 'ETH'];
+        // 其他可能持有的代币（余额>0时显示）
         var OTHER_TOKENS = ['USDC', 'BUSD', 'MYK', 'WBNB', 'CAKE'];
         
         var TOKEN_CONFIG = {
@@ -103,32 +108,96 @@
         ];
 
         var priceCache = {};
+        var currentAccount = null;
+        var totalValueEl = document.getElementById('totalAssetValue');
+        var listContainer = document.getElementById('waTokenList');
 
         function formatBalance(num) {
-            if (num === 0) return '0';
+            if (num === 0) return '0.00';
             if (num < 0.001) return num.toFixed(6);
             return num.toLocaleString('en-US', { maximumFractionDigits: 4 });
         }
 
         function formatUSD(num) {
-            if (num === 0) return '$0';
+            if (num === 0) return '$0.00';
             if (num < 0.01) return '$' + num.toFixed(4);
             return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+        // 创建资产卡片DOM，但不填充余额（余额后续更新）
+        function createTokenItem(symbol) {
+            var config = TOKEN_CONFIG[symbol];
+            var item = document.createElement('div');
+            item.className = 'wa-asset-item';
+            item.id = 'asset-' + symbol;
+            var showBadge = (symbol === 'USDC' || symbol === 'BUSD');
+            var bscBadge = showBadge ? 
+                '<div class="wa-network-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44"><path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/><path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/></svg></div>' : '';
+            item.innerHTML = 
+                '<div class="wa-asset-left">' +
+                    '<div class="wa-token-icon-wrapper">' +
+                        '<div class="wa-token-icon" style="background-color:' + config.iconColor + ';">' + config.iconText + '</div>' +
+                        bscBadge +
+                    '</div>' +
+                    '<div class="wa-token-info">' +
+                        '<div class="wa-token-name">' + symbol + '</div>' +
+                        '<div class="wa-token-price-wrap">' +
+                            '<span class="wa-token-price" id="price-' + symbol + '">$0.00</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="wa-asset-right">' +
+                    '<div class="wa-asset-balance" id="balance-' + symbol + '">--</div>' +
+                    '<div class="wa-asset-value" id="value-' + symbol + '">$0.00</div>' +
+                '</div>';
+            return item;
+        }
+
+        // 初始化所有默认卡片，并立即显示在列表中
+        function buildInitialUI() {
+            listContainer.innerHTML = '';
+            DEFAULT_TOKENS.forEach(function(symbol) {
+                var item = createTokenItem(symbol);
+                listContainer.appendChild(item);
+            });
+            // 其他代币的卡片也预先创建但隐藏，后续根据余额显示
+            OTHER_TOKENS.forEach(function(symbol) {
+                var item = createTokenItem(symbol);
+                item.style.display = 'none';
+                item.id = 'asset-' + symbol;
+                listContainer.appendChild(item);
+            });
+        }
+
+        // 更新单个代币的余额显示
+        function updateTokenUI(symbol, balance, price) {
+            var value = balance * price;
+            var balanceEl = document.getElementById('balance-' + symbol);
+            var valueEl = document.getElementById('value-' + symbol);
+            var priceEl = document.getElementById('price-' + symbol);
+            if (balanceEl) balanceEl.textContent = formatBalance(balance);
+            if (valueEl) valueEl.textContent = formatUSD(value);
+            if (priceEl) priceEl.textContent = formatUSD(price);
+            // 如果是其他代币，根据余额决定显示/隐藏
+            var item = document.getElementById('asset-' + symbol);
+            if (item && OTHER_TOKENS.indexOf(symbol) !== -1) {
+                item.style.display = balance > 0 ? 'flex' : 'none';
+            }
+            return value;
+        }
+
         async function getTokenBalance(symbol) {
-            if (!window.web3 || !window.currentAccount) return 0;
+            if (!window.web3 || !currentAccount) return 0;
             var config = TOKEN_CONFIG[symbol];
             if (!config) return 0;
-            var account = window.currentAccount;
             try {
                 if (config.isNative) {
-                    var balanceWei = await window.web3.eth.getBalance(account);
+                    var balanceWei = await window.web3.eth.getBalance(currentAccount);
                     return parseFloat(window.web3.utils.fromWei(balanceWei, 'ether'));
                 } else {
                     var contract = new window.web3.eth.Contract(ERC20_ABI, config.address);
                     var decimals = await contract.methods.decimals().call();
-                    var bal = await contract.methods.balanceOf(account).call();
+                    var bal = await contract.methods.balanceOf(currentAccount).call();
                     return parseFloat(window.web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
                 }
             } catch (e) {
@@ -149,9 +218,10 @@
                     }
                 });
                 priceCache['WBNB'] = priceCache['BNB'];
-                priceCache['MYK'] = 0.00647;
+                priceCache['MYK'] = 0.00647; // 可替换为链上实时价格
             } catch (e) {
                 console.error('价格获取失败', e);
+                // 回退价格
                 priceCache = {
                     BNB: 540, USDT: 1, BTCB: 58000, ETH: 3200, USDC: 1, BUSD: 1,
                     MYK: 0.0065, WBNB: 540, CAKE: 2.5
@@ -159,108 +229,85 @@
             }
         }
 
+        async function refreshAllData() {
+            if (!window.web3 || !currentAccount) {
+                // 未连接钱包时，将默认代币余额显示为'--'，价值为0
+                DEFAULT_TOKENS.forEach(function(symbol) {
+                    updateTokenUI(symbol, 0, 0);
+                    document.getElementById('balance-' + symbol).textContent = '--';
+                });
+                OTHER_TOKENS.forEach(function(symbol) {
+                    var item = document.getElementById('asset-' + symbol);
+                    if (item) item.style.display = 'none';
+                });
+                totalValueEl.textContent = '$0.00';
+                return;
+            }
+            await fetchPrices();
+            var totalValue = 0;
+            // 更新所有默认代币
+            for (var i = 0; i < DEFAULT_TOKENS.length; i++) {
+                var symbol = DEFAULT_TOKENS[i];
+                var balance = await getTokenBalance(symbol);
+                var price = getTokenPrice(symbol);
+                totalValue += updateTokenUI(symbol, balance, price);
+            }
+            // 扫描其他代币
+            for (var j = 0; j < OTHER_TOKENS.length; j++) {
+                var otherSymbol = OTHER_TOKENS[j];
+                var bal = await getTokenBalance(otherSymbol);
+                var pr = getTokenPrice(otherSymbol);
+                totalValue += updateTokenUI(otherSymbol, bal, pr);
+            }
+            totalValueEl.textContent = formatUSD(totalValue);
+        }
+
         function getTokenPrice(symbol) {
             return priceCache[symbol] || 0;
         }
 
-        async function refreshAssets() {
-            var container = document.getElementById('waTokenList');
-            if (!container) return;
-
-            // 始终先获取价格（不需要钱包）
-            await fetchPrices();
-
-            var assetList = [];
-            var isConnected = window.web3 && window.currentAccount;
-
-            // 添加四个默认代币（始终显示）
-            for (var i = 0; i < DEFAULT_TOKENS.length; i++) {
-                var symbol = DEFAULT_TOKENS[i];
-                var balance = 0;
-                if (isConnected) {
-                    balance = await getTokenBalance(symbol);
-                }
-                var price = getTokenPrice(symbol);
-                var value = balance * price;
-                assetList.push({ symbol: symbol, balance: balance, price: price, value: value });
-            }
-
-            // 连接钱包后才扫描其他代币
-            if (isConnected) {
-                for (var j = 0; j < OTHER_TOKENS.length; j++) {
-                    var otherSymbol = OTHER_TOKENS[j];
-                    var bal = await getTokenBalance(otherSymbol);
-                    if (bal > 0) {
-                        var pr = getTokenPrice(otherSymbol);
-                        var val = bal * pr;
-                        assetList.push({ symbol: otherSymbol, balance: bal, price: pr, value: val });
-                    }
-                }
-            }
-
-            // 按价值从高到低排序
-            assetList.sort(function(a, b) { return b.value - a.value; });
-
-            var totalValue = 0;
-            var html = '';
-
-            for (var k = 0; k < assetList.length; k++) {
-                var asset = assetList[k];
-                totalValue += asset.value;
-                var config = TOKEN_CONFIG[asset.symbol];
-                var showBadge = (asset.symbol === 'USDC' || asset.symbol === 'BUSD');
-                var bscBadge = showBadge ? 
-                    '<div class="wa-network-badge"><svg viewBox="0 0 24 24" width="14" height="14" fill="#152d44"><path d="M11.9999 0.410156L3.58325 5.52808V15.7639L11.9999 20.8819L20.4166 15.7639V5.52808L11.9999 0.410156Z" fill="#F3BA2F"/><path d="M9.39992 8.59995L12.0065 10.4167L14.6131 8.59995L12.0065 6.7832L9.39992 8.59995Z" fill="white"/></svg></div>' : '';
-
-                // 未连接钱包时余额显示 "--"
-                var balanceStr = isConnected ? formatBalance(asset.balance) : '--';
-                var valueStr = isConnected ? formatUSD(asset.value) : '$--';
-
-                html += 
-                    '<div class="wa-asset-item">' +
-                        '<div class="wa-asset-left">' +
-                            '<div class="wa-token-icon-wrapper">' +
-                                '<div class="wa-token-icon" style="background-color:' + config.iconColor + ';">' + config.iconText + '</div>' +
-                                bscBadge +
-                            '</div>' +
-                            '<div class="wa-token-info">' +
-                                '<div class="wa-token-name">' + asset.symbol + '</div>' +
-                                '<div class="wa-token-price-wrap">' +
-                                    '<span class="wa-token-price">' + formatUSD(asset.price) + '</span>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="wa-asset-right">' +
-                            '<div class="wa-asset-balance">' + balanceStr + '</div>' +
-                            '<div class="wa-asset-value">' + valueStr + '</div>' +
-                        '</div>' +
-                    '</div>';
-            }
-
-            container.innerHTML = html || '<div class="placeholder-text">暂无资产</div>';
-            document.getElementById('totalAssetValue').textContent = isConnected ? formatUSD(totalValue) : '$--';
-        }
-
-        document.addEventListener('walletConnected', function() {
-            refreshAssets();
+        // 账户变化监听
+        document.addEventListener('walletConnected', function(e) {
+            currentAccount = e.detail ? e.detail.account : window.currentAccount;
+            // 立即开始无感知刷新
+            refreshAllData();
         });
         document.addEventListener('walletDisconnected', function() {
-            // 断开后显示默认列表（余额清空）
-            refreshAssets();
+            currentAccount = null;
+            // 恢复默认显示，余额显示'--'
+            DEFAULT_TOKENS.forEach(function(symbol) {
+                updateTokenUI(symbol, 0, 0);
+                document.getElementById('balance-' + symbol).textContent = '--';
+            });
+            OTHER_TOKENS.forEach(function(symbol) {
+                var item = document.getElementById('asset-' + symbol);
+                if (item) item.style.display = 'none';
+            });
+            totalValueEl.textContent = '$0.00';
         });
 
-        // 初始加载：无论如何都先渲染默认列表
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                refreshAssets();
-            });
+        // 初始化UI
+        buildInitialUI();
+
+        // 启动时如果已连接钱包，立即刷新
+        if (window.web3 && window.currentAccount) {
+            currentAccount = window.currentAccount;
+            refreshAllData();
         } else {
-            refreshAssets();
+            // 尝试自动连接
+            setTimeout(function() {
+                if (window.web3 && window.currentAccount) {
+                    currentAccount = window.currentAccount;
+                    refreshAllData();
+                }
+            }, 500);
         }
 
-        // 每30秒刷新一次（连接时）
+        // 每30秒静默刷新（如果已连接）
         setInterval(function() {
-            refreshAssets();
+            if (currentAccount) {
+                refreshAllData();
+            }
         }, 30000);
     })();
     </script>
