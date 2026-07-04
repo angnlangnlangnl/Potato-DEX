@@ -27,15 +27,14 @@
     overflow-x: hidden;
   }
 
-  /* 修改后的 header：flex 布局，所有项目底部对齐 */
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;       /* 底部对齐，使标题与铃铛底部水平 */
-    padding-bottom: 20px;
+    align-items: flex-end;
+    padding-bottom: 16px;
     font-size: 18px;
     font-weight: 500;
-    flex-wrap: nowrap;           /* 防止换行 */
+    flex-wrap: nowrap;
   }
 
   .header-left {
@@ -50,24 +49,25 @@
     gap: 12px;
   }
 
-  /* 标题区域，占据中间空间，居中显示，且与其他元素底部对齐 */
   .header-title {
     display: flex;
     align-items: center;
     gap: 12px;
     white-space: nowrap;
-    flex: 1;                    /* 占据剩余空间 */
-    justify-content: center;    /* 内部居中 */
+    flex: 1;
+    justify-content: center;
   }
 
   .header-title .nav-item {
     color: var(--text-secondary);
     font-weight: 500;
     transition: color 0.2s;
+    font-size: 22px;          /* 放大字体 */
   }
   .header-title .nav-item.active {
     color: var(--text-primary);
     font-weight: 600;
+    font-size: 22px;          /* 保持与未激活一致，或可单独设 */
   }
 
   .action-bar {
@@ -343,7 +343,6 @@
     cursor: pointer;
   }
 
-  /* 浮动按钮：独立于所有卡片，定位在右下角，不被任何容器包裹 */
   .floating-action {
     position: absolute;
     right: 16px;
@@ -366,18 +365,17 @@
     .seller-name { font-size: 14px; }
     .price { font-size: 22px; }
     .buy-btn, .sell-btn { padding: 6px 20px; font-size: 13px; }
+    .header-title .nav-item { font-size: 20px; }  /* 小屏适当减小 */
   }
 </style>
 
-  <!-- 修改后的 header：标题与右侧铃铛底部水平对齐 -->
   <div class="header">
     <div class="header-left">
       <svg class="icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </div>
-    <!-- 标题区域（flex 居中） -->
     <div class="header-title">
       <span class="nav-item active">OTC交易</span>
-      <span class="nav-item">订单详情v</span>
+      <span class="nav-item">订单详情</span>
     </div>
     <div class="header-right">
       <svg class="icon" style="color:var(--text-secondary);" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
@@ -569,7 +567,6 @@
     </div>
   </div>
 
-  <!-- 浮动按钮：独立于所有卡片容器 -->
   <div class="floating-action">
     <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
   </div>
