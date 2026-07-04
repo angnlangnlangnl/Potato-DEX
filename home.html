@@ -10,7 +10,22 @@
             margin-bottom: 15px; 
             color: #ccd6f0; 
         }
-        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #f0b90b; }
+        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; color: #f0b90b; }
+        .swap-title span { cursor: pointer; margin-right: 12px; }
+        .swap-title .tab-link { color: #a3adc9; }
+        .swap-title .tab-link.active { color: #f0b90b; }
+        .lp-hint { font-size: 12px; color: #888; margin-bottom: 12px; }
+
+        .dex-switch {
+            display: flex; margin-bottom: 16px; border-radius: 12px; overflow: hidden; border: 1px solid #2d325a;
+        }
+        .dex-btn {
+            flex: 1; padding: 10px 0; font-size: 14px; font-weight: 600; background: #0d1125; color: #a3adc9;
+            border: none; cursor: pointer; transition: background 0.2s, color 0.2s; text-align: center;
+        }
+        .dex-btn:first-child { border-right: 1px solid #2d325a; }
+        .dex-btn.active { background: #f0b90b; color: #0b0f1a; }
+        .dex-btn:active { opacity: 0.8; }
         
         .search-wrapper { position: relative; margin-bottom: 14px; }
         .token-search {
@@ -58,6 +73,23 @@
         .price-info { font-size: 13px; color: #888; text-align: center; margin-top: 12px; }
         .slippage { display: flex; justify-content: flex-end; margin-bottom: 10px; font-size: 12px; color: #888; }
 
+        /* LP 视图样式 */
+        .lp-input-row { margin-bottom: 10px; }
+        .lp-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .price-row {
+            display: flex; align-items: center; background: #0d1125; border: 1px solid #2d325a;
+            border-radius: 12px; padding: 0 0 0 14px;
+        }
+        .price-row input {
+            flex: 1; background: transparent; border: none; color: #fff; font-size: 14px;
+            padding: 10px 0; outline: none;
+        }
+        .price-calc {
+            color: #4ecca3; font-size: 13px; font-weight: 500; white-space: nowrap;
+            padding: 10px 14px; border-left: 1px solid #2d325a;
+        }
+        .hide { display: none !important; }
+
         /* 交易记录卡片样式 */
         .recent-trade-card { margin-top: 0; }
         .trade-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -72,35 +104,69 @@
         .no-record { text-align: center; color: #888; font-size: 14px; padding: 10px 0; }
     </style>
 
-    <!-- 兑换卡片 -->
+    <!-- 兑换卡片（含 LP 视图） -->
     <div class="glass-card">
-        <div class="swap-title">兑换</div>
-        <div class="search-wrapper">
-            <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，搜索">
-            <button class="search-icon" id="searchIconBtn" title="搜索">🔍</button>
-        </div>
-        <div class="balance-row">余额: <span id="inputBalance">0.00</span> <span class="max-btn" id="inputMaxBtn">全部</span></div>
-
-        <div class="input-row">
-            <input type="number" id="inputAmount" placeholder="0.0" step="any">
-            <button class="token-select" id="inputTokenBtn">USDT ▼</button>
+        <!-- DEX 切换按钮 -->
+        <div class="dex-switch">
+            <button class="dex-btn active" id="pancakeBtn" onclick="switchDEX('pancake')">🥞 PancakeSwap (博饼)</button>
+            <button class="dex-btn" id="uniBtn" onclick="switchDEX('uni')">🦄 Uniswap</button>
         </div>
 
-        
-        <div class="swap-arrow" onclick="swapTokens()">↓</div>
-        <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
-
-        <div class="input-row">
-            <input type="number" id="outputAmount" placeholder="0.0" readonly>
-            <button class="token-select" id="outputTokenBtn">BNB ▼</button>
+        <!-- 标题栏 -->
+        <div class="swap-title">
+            <span id="tabSwap" class="tab-link active" onclick="showSwapView()">兑换</span>
+            <span id="tabLP" class="tab-link" onclick="showLPView()">添加LP</span>
         </div>
-        
-        <div class="slippage">滑点容忍度: 0.5%</div>
-        <button id="swapButton" class="swap-btn" onclick="executeSwap()">连接钱包</button>
-        <div class="price-info" id="rateInfo">--</div>
+        <div class="lp-hint">快一键加V2流动性底池 · 方便更快捷</div>
+
+        <!-- 兑换视图 -->
+        <div id="swapView">
+            <div class="search-wrapper">
+                <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，搜索">
+                <button class="search-icon" id="searchIconBtn" title="搜索">🔍</button>
+            </div>
+            <div class="balance-row">余额: <span id="inputBalance">0.00</span> <span class="max-btn" id="inputMaxBtn">全部</span></div>
+            <div class="input-row">
+                <input type="number" id="inputAmount" placeholder="0.0" step="any">
+                <button class="token-select" id="inputTokenBtn">USDT ▼</button>
+            </div>
+            <div class="swap-arrow" onclick="swapTokens()">↓</div>
+            <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
+            <div class="input-row">
+                <input type="number" id="outputAmount" placeholder="0.0" readonly>
+                <button class="token-select" id="outputTokenBtn">BNB ▼</button>
+            </div>
+            <div class="slippage">滑点容忍度: 0.5%</div>
+            <button id="swapButton" class="swap-btn" onclick="executeSwap()">连接钱包</button>
+            <div class="price-info" id="rateInfo">--</div>
+        </div>
+
+        <!-- 添加LP视图 -->
+        <div id="lpView" class="hide">
+            <div class="search-wrapper">
+                <input type="text" class="token-search" id="lpContractSearch" placeholder="输入代币合约地址搜索">
+                <button class="search-icon" id="lpSearchBtn" title="搜索">🔍</button>
+            </div>
+            <div class="lp-input-row">
+                <div class="lp-label">代币初始价格 (USDT)</div>
+                <div class="price-row">
+                    <input type="number" id="lpTokenPrice" placeholder="例如 0.001" step="any">
+                    <span class="price-calc" id="lpPriceCalc">1 USDT = -- 代币</span>
+                </div>
+            </div>
+            <div class="lp-input-row">
+                <div class="lp-label">USDT 数量</div>
+                <input type="number" id="lpUSDTAmount" class="token-search" placeholder="0.0" step="any" style="margin:0;">
+            </div>
+            <div class="lp-input-row">
+                <div class="lp-label">代币数量</div>
+                <input type="number" id="lpTokenAmount" class="token-search" placeholder="0.0" step="any" style="margin:0;">
+            </div>
+            <button class="swap-btn" onclick="addLiquidity()">添加流动性</button>
+        </div>
     </div>
 
-    <!-- 最近交易记录卡片 (始终显示) -->
+    <!-- 最近交易记录卡片 -->
     <div class="glass-card recent-trade-card" id="recentTradeCard">
         <div class="trade-record-header">
             <span class="trade-record-title">📋 最近交易</span>
@@ -113,6 +179,21 @@
 
     <script>
     (function() {
+        // ==================== 配置 ====================
+        var currentDEX = 'pancake';
+        var ROUTERS = {
+            pancake: '0x10ED43C718714eb63d5aA57B78B54704E256024E', // PancakeSwap V2 Router
+            uni: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'      // Uniswap V2 Router (Ethereum 主网)
+        };
+        var FACTORIES = {
+            pancake: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
+            uni: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
+        };
+        var WBNBS = {
+            pancake: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            uni: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+        };
+
         var TOKEN_ADDRESSES = {
             'USDT': '0x55d398326f99059fF775485246999027B3197955',
             'MYK': '0xc23CfEeC6D188D627C85106f682D9eb38d94192a',
@@ -123,6 +204,7 @@
             'ETH': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
             'BTCB': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c'
         };
+
         var ERC20_ABI = [
             {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
             {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"type":"function"},
@@ -131,23 +213,62 @@
             {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"}
         ];
         var ROUTER_ABI = [
+            // swap
             {"constant":false,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
             {"constant":false,"inputs":[{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactETHForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
             {"constant":false,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForETH","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            // addLiquidity
+            {"constant":false,"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"},{"internalType":"uint256","name":"amountADesired","type":"uint256"},{"internalType":"uint256","name":"amountBDesired","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"addLiquidity","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"type":"function"},
+            // getAmountsOut
             {"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}
         ];
         var FACTORY_ABI = [{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"getPair","outputs":[{"name":"","type":"address"}],"type":"function"}];
 
         var currentInputToken = 'USDT';
         var currentOutputToken = 'BNB';
-        var ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
-        var FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73';
-        var WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
+        var ROUTER = ROUTERS[currentDEX];
+        var FACTORY = FACTORIES[currentDEX];
+        var WBNB = WBNBS[currentDEX];
         var MAX_UINT256 = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+        // LP 相关状态
+        var lpTokenAddress = null; // 搜索到的代币地址
 
         function $(id) { return document.getElementById(id); }
         function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
 
+        // ==================== 视图切换 ====================
+        window.showSwapView = function() {
+            document.getElementById('swapView').classList.remove('hide');
+            document.getElementById('lpView').classList.add('hide');
+            document.getElementById('tabSwap').classList.add('active');
+            document.getElementById('tabLP').classList.remove('active');
+            updateBalances();
+            updateRate();
+        };
+        window.showLPView = function() {
+            document.getElementById('swapView').classList.add('hide');
+            document.getElementById('lpView').classList.remove('hide');
+            document.getElementById('tabSwap').classList.remove('active');
+            document.getElementById('tabLP').classList.add('active');
+        };
+
+        // ==================== DEX 切换 ====================
+        window.switchDEX = function(dex) {
+            currentDEX = dex;
+            ROUTER = ROUTERS[dex];
+            FACTORY = FACTORIES[dex];
+            WBNB = WBNBS[dex];
+            document.getElementById('pancakeBtn').classList.toggle('active', dex === 'pancake');
+            document.getElementById('uniBtn').classList.toggle('active', dex === 'uni');
+            if (!document.getElementById('swapView').classList.contains('hide')) {
+                updateBalances();
+                updateRate();
+            }
+            parent.showToast('已切换到 ' + (dex === 'pancake' ? 'PancakeSwap' : 'Uniswap'), 'success');
+        };
+
+        // ==================== 余额 / 价格 ====================
         async function getDecimals(tokenSymbol) {
             if (tokenSymbol === 'BNB') return 18;
             var addr = TOKEN_ADDRESSES[tokenSymbol];
@@ -242,6 +363,7 @@
             }
         }
 
+        // ==================== 搜索（兑换） ====================
         async function searchToken() {
             var searchInput = $('tokenSearch');
             var query = searchInput.value.trim();
@@ -303,7 +425,7 @@
             updateRate();
         };
 
-        // ========== 交易记录存储与展示 ==========
+        // ==================== 交易记录 ====================
         function saveTradeRecord(record) {
             try {
                 var records = JSON.parse(localStorage.getItem('potato_recent_trades') || '[]');
@@ -338,14 +460,15 @@
                     '<div class="trade-record-row"><span class="trade-record-label">交易哈希</span><a class="tx-hash" href="https://bscscan.com/tx/' + record.txHash + '" target="_blank">' + record.txHash.substring(0, 10) + '...' + record.txHash.substring(record.txHash.length - 8) + '</a></div>' : '';
                 content.innerHTML = 
                     '<div class="trade-record-row"><span class="trade-record-label">交易对</span><span class="trade-record-value">' + record.inputToken + ' → ' + record.outputToken + '</span></div>' +
-                    '<div class="trade-record-row"><span class="trade-record-label">转入</span><span class="trade-record-value">' + record.inputAmount + ' ' + record.inputToken + '</span></div>' +
-                    '<div class="trade-record-row"><span class="trade-record-label">转出</span><span class="trade-record-value">' + record.outputAmount + ' ' + record.outputToken + '</span></div>' +
+                    '<div class="trade-record-row"><span class="trade-record-label">输入</span><span class="trade-record-value">' + record.inputAmount + ' ' + record.inputToken + '</span></div>' +
+                    '<div class="trade-record-row"><span class="trade-record-label">输出</span><span class="trade-record-value">' + record.outputAmount + ' ' + record.outputToken + '</span></div>' +
                     txHashDisplay;
             }
         }
 
         renderRecentTrade();
 
+        // ==================== 执行兑换（已使用 ROUTER） ====================
         window.executeSwap = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -462,6 +585,81 @@
             renderRecentTrade();
         });
 
+        // ==================== 添加流动性（根据 currentDEX 使用对应 Router） ====================
+        // LP 价格联动
+        $('lpTokenPrice').addEventListener('input', function() {
+            var price = parseFloat(this.value);
+            var calcSpan = $('lpPriceCalc');
+            if (!isNaN(price) && price > 0) {
+                calcSpan.textContent = '1 USDT = ' + (1/price).toFixed(6) + ' 代币';
+                var usdtAmt = parseFloat($('lpUSDTAmount').value) || 0;
+                if (usdtAmt > 0) $('lpTokenAmount').value = (usdtAmt / price).toFixed(6);
+            } else {
+                calcSpan.textContent = '1 USDT = -- 代币';
+            }
+        });
+        $('lpUSDTAmount').addEventListener('input', function() {
+            var usdtAmt = parseFloat(this.value);
+            var price = parseFloat($('lpTokenPrice').value);
+            if (!isNaN(usdtAmt) && !isNaN(price) && price > 0) {
+                $('lpTokenAmount').value = (usdtAmt / price).toFixed(6);
+            }
+        });
+
+        // LP 合约搜索（保存地址并检查交易对）
+        $('lpSearchBtn').addEventListener('click', async function() {
+            var addr = $('lpContractSearch').value.trim();
+            if (!web3 || !addr) return;
+            if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+                parent.showToast('无效的合约地址', 'error');
+                return;
+            }
+            try {
+                var contract = new web3.eth.Contract(ERC20_ABI, addr);
+                var symbol = await contract.methods.symbol().call();
+                var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
+                var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                var pair = await factoryContract.methods.getPair(addr, usdtAddr).call();
+                if (pair !== '0x0000000000000000000000000000000000000000') {
+                    lpTokenAddress = addr;
+                    parent.showToast('已找到 ' + symbol + '/USDT 交易对，可添加流动性', 'success');
+                } else {
+                    lpTokenAddress = addr;
+                    parent.showToast('未找到与 USDT 的交易对，仍可尝试创建', 'info');
+                }
+                $('lpContractSearch').value = symbol; // 显示代币名称
+            } catch (e) {
+                parent.showToast('获取代币信息失败', 'error');
+            }
+        });
+
+        // 添加流动性核心函数（已使用当前 Router 和 Factory）
+        window.addLiquidity = function() {
+            var price = $('lpTokenPrice').value;
+            var usdt = $('lpUSDTAmount').value;
+            var tokenAmt = $('lpTokenAmount').value;
+            if (!lpTokenAddress) {
+                parent.showToast('请先搜索并加载代币合约', 'error');
+                return;
+            }
+            if (!price || !usdt) {
+                parent.showToast('请输入价格和USDT数量', 'error');
+                return;
+            }
+            // 实际调用需要链上交互，此处展示当前使用的 DEX 和 Router
+            parent.showToast(
+                '正在通过 ' + (currentDEX === 'pancake' ? 'PancakeSwap' : 'Uniswap') +
+                ' 添加流动性\nRouter: ' + ROUTER.substring(0, 10) + '...' +
+                '\n(链上交易开发中，当前为演示)',
+                'info'
+            );
+            // 未来可实现真实调用：
+            // 1. 授权 USDT 和代币给 Router
+            // 2. 调用 Router.addLiquidity(...)
+        };
+
+        // 初始化
+        showSwapView();
         if (window.web3 && window.currentAccount) {
             updateBalances();
             updateRate();
