@@ -125,7 +125,9 @@
         .price-calc {
             color: #4ecca3; font-size: 13px; font-weight: 500; white-space: nowrap;
             padding: 10px 14px; border-left: 1px solid #2d325a;
-            /* 移除任何按钮样式 */
+            max-width: 150px;          /* 防止溢出 */
+            overflow: hidden;
+            text-overflow: ellipsis;
             cursor: default;
             user-select: none;
         }
@@ -179,18 +181,19 @@
             <div class="price-info" id="rateInfo">--</div>
         </div>
 
-        <!-- 添加LP视图（默认隐藏） -->
+        <!-- 添加LP视图（仅手动输入，右侧代币名称动态显示） -->
         <div id="lpView" class="hide">
             <div class="search-wrapper">
                 <input type="text" class="token-search" id="lpContractSearch" placeholder="输入代币合约地址搜索">
                 <button class="search-icon" id="lpSearchBtn" title="搜索">🔍</button>
             </div>
+            <!-- 代币初始价格输入框：纯手动输入，右侧换算显示当前搜索到的代币符号 -->
             <div class="lp-input-row">
                 <div class="lp-label-row">
                     <span class="lp-label">代币初始价格 (USDT)</span>
                 </div>
                 <div class="price-row">
-                    <input type="number" id="lpTokenPrice" placeholder="" step="any">
+                    <input type="number" id="lpTokenPrice" placeholder="" step="any" value="">
                     <span class="price-calc" id="lpPriceCalc">1 USDT = -- TOKEN</span>
                 </div>
             </div>
@@ -303,6 +306,12 @@
             document.getElementById('tabSwap').classList.remove('active');
             document.getElementById('tabLP').classList.add('active');
             updateLPBalances();
+            // 清空所有输入框，但保留右侧换算符号为当前搜索到的代币
+            $('lpTokenPrice').value = '';
+            $('lpAmountFirst').value = '';
+            $('lpAmountSecond').value = '';
+            // 更新右侧代币名称显示
+            $('lpPriceCalc').textContent = '1 USDT = -- ' + lpTokenSymbol;
         };
 
         window.switchDEX = function(dex) {
@@ -341,9 +350,7 @@
             return parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
         }
 
-        async function getBalance(tokenSymbol) {
-            return getTokenBalanceBySymbol(tokenSymbol);
-        }
+        async function getBalance(tokenSymbol) { return getTokenBalanceBySymbol(tokenSymbol); }
 
         async function buildPath(inputSymbol, outputSymbol) {
             var inputAddr = (inputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[inputSymbol];
@@ -478,7 +485,6 @@
             updateRate();
         };
 
-        // ================== LP 上下交换功能 ==================
         window.swapLiquidityTokens = function() {
             var firstAmt = $('lpAmountFirst').value;
             var secondAmt = $('lpAmountSecond').value;
@@ -499,18 +505,6 @@
             var secondBtn = $('lpTokenBtnSecond').textContent;
             $('lpTokenBtnFirst').textContent = secondBtn;
             $('lpTokenBtnSecond').textContent = firstBtn;
-
-            var priceInput = $('lpTokenPrice');
-            var price = parseFloat(priceInput.value);
-            if (!isNaN(price) && price > 0) {
-                priceInput.value = (1 / price).toFixed(6);
-                var calcEl = $('lpPriceCalc');
-                if (calcEl.textContent.includes('USDT')) {
-                    calcEl.textContent = '1 ' + lpTokenSymbol + ' = ' + (1/price).toFixed(6) + ' USDT';
-                } else {
-                    calcEl.textContent = '1 USDT = ' + price.toFixed(6) + ' ' + lpTokenSymbol;
-                }
-            }
         };
 
         function saveTradeRecord(record) {
@@ -575,31 +569,19 @@
                 var outputDecimals = await getDecimals(currentOutputToken);
 
                 var amountInWei;
-                if (inputDecimals === 18) {
-                    amountInWei = web3.utils.toWei(amount, 'ether');
-                } else {
-                    amountInWei = BigInt(Math.floor(parseFloat(amount) * (10 ** inputDecimals))).toString();
-                }
+                if (inputDecimals === 18) amountInWei = web3.utils.toWei(amount, 'ether');
+                else amountInWei = BigInt(Math.floor(parseFloat(amount) * (10 ** inputDecimals))).toString();
 
                 var path = await buildPath(currentInputToken, currentOutputToken);
-                if (!path) {
-                    parent.showToast('无有效兑换路径', 'error');
-                    btn.disabled = false; btn.textContent = '兑换'; return;
-                }
+                if (!path) { parent.showToast('无有效兑换路径', 'error'); btn.disabled = false; btn.textContent = '兑换'; return; }
 
                 var price = await fetchSpotPrice();
-                if (price <= 0) {
-                    parent.showToast('无法获取价格', 'error');
-                    btn.disabled = false; btn.textContent = '兑换'; return;
-                }
+                if (price <= 0) { parent.showToast('无法获取价格', 'error'); btn.disabled = false; btn.textContent = '兑换'; return; }
                 var expectedOut = parseFloat(amount) * price;
                 var amountOutMin = expectedOut * 0.995;
                 var amountOutMinWei;
-                if (outputDecimals === 18) {
-                    amountOutMinWei = web3.utils.toWei(amountOutMin.toFixed(18), 'ether');
-                } else {
-                    amountOutMinWei = BigInt(Math.floor(amountOutMin * (10 ** outputDecimals))).toString();
-                }
+                if (outputDecimals === 18) amountOutMinWei = web3.utils.toWei(amountOutMin.toFixed(18), 'ether');
+                else amountOutMinWei = BigInt(Math.floor(amountOutMin * (10 ** outputDecimals))).toString();
 
                 var deadline = Math.floor(Date.now()/1000) + 600;
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
@@ -607,9 +589,7 @@
 
                 if (currentInputToken === 'BNB') {
                     btn.textContent = '等待确认...';
-                    tx = await routerContract.methods.swapExactETHForTokens(
-                        amountOutMinWei, path, account, deadline
-                    ).send({ from: account, value: amountInWei });
+                    tx = await routerContract.methods.swapExactETHForTokens(amountOutMinWei, path, account, deadline).send({ from: account, value: amountInWei });
                 } else {
                     var tokenAddr = TOKEN_ADDRESSES[currentInputToken];
                     var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
@@ -621,15 +601,10 @@
                         parent.showToast('授权成功，继续兑换', 'success');
                         btn.textContent = '正在兑换...';
                     }
-
                     if (currentOutputToken === 'BNB') {
-                        tx = await routerContract.methods.swapExactTokensForETH(
-                            amountInWei, amountOutMinWei, path, account, deadline
-                        ).send({ from: account });
+                        tx = await routerContract.methods.swapExactTokensForETH(amountInWei, amountOutMinWei, path, account, deadline).send({ from: account });
                     } else {
-                        tx = await routerContract.methods.swapExactTokensForTokens(
-                            amountInWei, amountOutMinWei, path, account, deadline
-                        ).send({ from: account });
+                        tx = await routerContract.methods.swapExactTokensForTokens(amountInWei, amountOutMinWei, path, account, deadline).send({ from: account });
                     }
                 }
 
@@ -651,17 +626,10 @@
             } catch (e) {
                 console.error(e);
                 var msg = e.message || '';
-                if (msg.includes('User denied') || msg.includes('rejected')) {
-                    parent.showToast('交易已取消', 'error');
-                } else if (msg.includes('INSUFFICIENT_OUTPUT_AMOUNT')) {
-                    parent.showToast('价格波动过大，请重试', 'error');
-                } else {
-                    parent.showToast('交易失败: ' + msg.substring(0, 100), 'error');
-                }
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '兑换';
-            }
+                if (msg.includes('User denied') || msg.includes('rejected')) parent.showToast('交易已取消', 'error');
+                else if (msg.includes('INSUFFICIENT_OUTPUT_AMOUNT')) parent.showToast('价格波动过大，请重试', 'error');
+                else parent.showToast('交易失败: ' + msg.substring(0, 100), 'error');
+            } finally { btn.disabled = false; btn.textContent = '兑换'; }
         };
 
         $('inputAmount').addEventListener('input', updateRate);
@@ -682,9 +650,7 @@
                     var bal = await tokenContract.methods.balanceOf(window.currentAccount).call();
                     var fmt = parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
                     $('lpBalanceSecond').textContent = fmt.toFixed(4);
-                } catch (e) {
-                    $('lpBalanceSecond').textContent = '0.00';
-                }
+                } catch (e) { $('lpBalanceSecond').textContent = '0.00'; }
             } else {
                 $('lpBalanceSecond').textContent = '0.00';
             }
@@ -693,6 +659,7 @@
         function updateLPTokenDisplay(symbol) {
             lpTokenSymbol = symbol || 'TOKEN';
             $('lpTokenBtnSecond').textContent = lpTokenSymbol;
+            // 更新右侧计算器文本，使用新的代币符号
             $('lpPriceCalc').textContent = '1 USDT = -- ' + lpTokenSymbol;
             var price = parseFloat($('lpTokenPrice').value);
             if (!isNaN(price) && price > 0) {
@@ -700,28 +667,13 @@
             }
         }
 
+        // 价格输入时只更新右侧换算文本，不自动填充其他输入框
         $('lpTokenPrice').addEventListener('input', function() {
             var price = parseFloat(this.value);
             if (!isNaN(price) && price > 0) {
                 $('lpPriceCalc').textContent = '1 USDT = ' + (1/price).toFixed(6) + ' ' + lpTokenSymbol;
-                var usdtAmt = parseFloat($('lpAmountFirst').value) || 0;
-                if (usdtAmt > 0) $('lpAmountSecond').value = (usdtAmt / price).toFixed(6);
             } else {
                 $('lpPriceCalc').textContent = '1 USDT = -- ' + lpTokenSymbol;
-            }
-        });
-        $('lpAmountFirst').addEventListener('input', function() {
-            var usdtAmt = parseFloat(this.value);
-            var price = parseFloat($('lpTokenPrice').value);
-            if (!isNaN(usdtAmt) && !isNaN(price) && price > 0) {
-                $('lpAmountSecond').value = (usdtAmt / price).toFixed(6);
-            }
-        });
-        $('lpAmountSecond').addEventListener('input', function() {
-            var tokenAmt = parseFloat(this.value);
-            var price = parseFloat($('lpTokenPrice').value);
-            if (!isNaN(tokenAmt) && !isNaN(price) && price > 0) {
-                $('lpAmountFirst').value = (tokenAmt * price).toFixed(6);
             }
         });
 
@@ -756,14 +708,14 @@
 
         window.addLiquidity = function() {
             var price = $('lpTokenPrice').value;
-            var firstAmt = $('lpAmountFirst').value;
-            var secondAmt = $('lpAmountSecond').value;
+            var usdt = $('lpAmountFirst').value;
+            var tokenAmt = $('lpAmountSecond').value;
             if (!lpTokenAddress) {
                 parent.showToast('请先搜索并加载代币合约', 'error');
                 return;
             }
-            if (!price || !firstAmt) {
-                parent.showToast('请输入价格和数量', 'error');
+            if (!price || !usdt || !tokenAmt) {
+                parent.showToast('请完整填写价格和数量', 'error');
                 return;
             }
             parent.showToast(
