@@ -128,7 +128,7 @@
         }
         .hide { display: none !important; }
 
-        /* 交易记录列表样式（复用于兑换和LP） */
+        /* 交易记录列表样式 */
         .recent-trade-card { margin-top: 0; }
         .trade-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .trade-record-title { font-size: 16px; font-weight: bold; color: #f0b90b; }
@@ -165,7 +165,6 @@
         .lp-trade-amount { color: #ccd6f0; }
     </style>
 
-    <!-- 兑换卡片（含 LP 视图） -->
     <div class="glass-card">
         <div class="dex-switch">
             <button class="dex-btn active" id="pancakeBtn" onclick="switchDEX('pancake')">🥞 PancakeSwap (博饼)</button>
@@ -178,7 +177,6 @@
             <span id="tabLP" class="tab-link" onclick="showLPView()">添加LP</span>
         </div>
 
-        <!-- 兑换视图 -->
         <div id="swapView">
             <div class="search-wrapper">
                 <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，搜索">
@@ -200,7 +198,6 @@
             <div class="price-info" id="rateInfo">--</div>
         </div>
 
-        <!-- 添加LP视图 -->
         <div id="lpView" class="hide">
             <div class="search-wrapper">
                 <input type="text" class="token-search" id="lpContractSearch" placeholder="输入代币合约地址搜索">
@@ -242,7 +239,6 @@
             <div class="slippage" style="margin-top: 2px;">滑点容忍度: 0.5%</div>
             <button class="swap-btn" id="lpAddBtn" onclick="addLiquidity()">添加 PancakeSwap V2 LP</button>
 
-            <!-- 新增：LP 交易记录卡片 -->
             <div class="glass-card lp-trade-card" id="lpTradeCard">
                 <div class="trade-record-header">
                     <span class="trade-record-title">📋 最近10笔交易</span>
@@ -316,7 +312,6 @@
         var lpTokenAddress = null;
         var lpTokenSymbol = 'TOKEN';
 
-        // PancakeSwap 子图 URL
         var PCS_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2';
 
         function $(id) { return document.getElementById(id); }
@@ -354,7 +349,6 @@
             document.getElementById('pancakeBtn').classList.toggle('active', dex === 'pancake');
             document.getElementById('uniBtn').classList.toggle('active', dex === 'uni');
             updateLPButton();
-            // 切换时隐藏交易记录
             var tradeCard = $('lpTradeCard');
             if (tradeCard) tradeCard.style.display = 'none';
             if (!document.getElementById('swapView').classList.contains('hide')) {
@@ -558,7 +552,6 @@
             }
         };
 
-        // ========== 交易记录存储（兑换历史） ==========
         function saveTradeRecord(record) {
             try {
                 var records = JSON.parse(localStorage.getItem('potato_recent_trades') || '[]');
@@ -746,10 +739,17 @@
             }
         }
 
-        // ========== PancakeSwap 交易记录查询 ==========
+        // 检查是否在正确的网络上
+        async function isCorrectNetwork() {
+            try {
+                var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                var expectedChainId = currentDEX === 'pancake' ? '0x38' : '0x1'; // BSC=56(0x38), Ethereum=1
+                return chainId === expectedChainId;
+            } catch (e) { return false; }
+        }
+
         async function fetchPairSwaps(pairAddress, tokenSymbol) {
-            var query = `
-            {
+            var query = `{
                 swaps(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${pairAddress.toLowerCase()}" }) {
                     transaction { id }
                     amount0In
@@ -785,12 +785,8 @@
             var html = '';
             for (var i = 0; i < swaps.length; i++) {
                 var s = swaps[i];
-                var isBuy = false; // 简化处理：若 amount0In > 0 且 token0 是 USDT，则买入代币；需要知道 token0 是哪个
-                // 此处简单假设 pair 中 token0 是 USDT（我们在搜索时已经确认是 token/USDT 交易对），实际上需验证
-                // 我们直接从之前获取的 pair 信息中推断，但为避免再次查询，直接显示成交额
                 var amountUSDT = parseFloat(web3.utils.fromWei(s.amount0In, 'ether')) || parseFloat(web3.utils.fromWei(s.amount1In, 'ether'));
                 var amountToken = parseFloat(web3.utils.fromWei(s.amount0Out, 'ether')) || parseFloat(web3.utils.fromWei(s.amount1Out, 'ether'));
-                // 简单展示
                 var time = new Date(s.timestamp * 1000).toLocaleString();
                 html += '<div class="lp-trade-item">' +
                             '<span class="lp-trade-action">' + (amountToken > 0 ? '买入 ' + tokenSymbol : '卖出 ' + tokenSymbol) + '</span>' +
@@ -809,7 +805,7 @@
             if (card) card.style.display = 'block';
         }
 
-        // ========== LP 搜索合约事件 ==========
+        // LP 搜索合约（已修复网络检查）
         $('lpSearchBtn').addEventListener('click', async function() {
             var addr = $('lpContractSearch').value.trim();
             if (!web3 || !addr) return;
@@ -817,9 +813,15 @@
                 parent.showToast('无效的合约地址', 'error');
                 return;
             }
-            // 先隐藏之前的交易记录
             var tradeCard = $('lpTradeCard');
             if (tradeCard) tradeCard.style.display = 'none';
+
+            // 检查网络是否匹配当前DEX
+            var correctNet = await isCorrectNetwork();
+            if (!correctNet) {
+                parent.showToast('当前网络与所选DEX不匹配，请切换网络', 'error');
+                return;
+            }
 
             try {
                 var contract = new web3.eth.Contract(ERC20_ABI, addr);
@@ -831,13 +833,11 @@
                     lpTokenAddress = addr;
                     updateLPTokenDisplay(symbol);
                     parent.showToast('已找到 ' + symbol + '/USDT 交易对，可添加流动性', 'success');
-                    // 加载最近10笔交易
                     fetchPairSwaps(pair, symbol);
                 } else {
                     lpTokenAddress = addr;
                     updateLPTokenDisplay(symbol);
                     parent.showToast('未找到与 USDT 的交易对，仍可尝试创建', 'info');
-                    // 尝试查询与 WBNB 的交易对（或许也可以显示）
                     var pair2 = await factoryContract.methods.getPair(addr, WBNB).call();
                     if (pair2 !== '0x0000000000000000000000000000000000000000') {
                         fetchPairSwaps(pair2, symbol);
@@ -848,6 +848,7 @@
                 $('lpContractSearch').value = symbol;
                 updateLPBalances();
             } catch (e) {
+                console.error(e);
                 parent.showToast('获取代币信息失败', 'error');
                 showLPTradeError();
             }
@@ -898,7 +899,6 @@
             );
         };
 
-        // 初始化
         updateLPButton();
         showSwapView();
         if (window.web3 && window.currentAccount) {
