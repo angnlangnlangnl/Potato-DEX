@@ -1,6 +1,5 @@
 <div id="page-trade" class="page-container">
     <style>
-        /* 所有样式保持不变，仅新增或修改展示行的样式 */
         .glass-card { 
             background: rgba(18,22,40,0.7); 
             backdrop-filter: blur(16px); 
@@ -9,7 +8,7 @@
             border-radius: 16px; 
             padding: 20px; 
             margin-bottom: 15px; 
-            color: #ccd6f0;
+            color: #ccd6f0; 
             overflow: hidden;
         }
         .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; color: #f0b90b; }
@@ -115,7 +114,6 @@
             padding: 0;
             margin-bottom: 0;
         }
-        /* 新增：价格展示行 */
         .price-display-row {
             display: flex;
             align-items: center;
@@ -133,7 +131,6 @@
         }
         .hide { display: none !important; }
 
-        /* 交易记录卡片样式保持不变 */
         .recent-trade-card { margin-top: 0; }
         .trade-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .trade-record-title { font-size: 16px; font-weight: bold; color: #f0b90b; }
@@ -162,7 +159,6 @@
         .lp-trade-amount { color: #ccd6f0; }
     </style>
 
-    <!-- 兑换卡片（含 LP 视图） -->
     <div class="glass-card">
         <div class="dex-switch">
             <button class="dex-btn active" id="pancakeBtn" onclick="switchDEX('pancake')">
@@ -205,7 +201,6 @@
             <div class="price-info" id="rateInfo">--</div>
         </div>
 
-        <!-- 添加LP视图（修改了价格展示部分） -->
         <div id="lpView" class="hide">
             <div class="search-wrapper">
                 <input type="text" class="token-search" id="lpContractSearch" placeholder="输入代币合约地址搜索">
@@ -215,7 +210,6 @@
                 <div class="lp-label-row">
                     <span class="lp-label">当前价格 (1 USDT = ? TOKEN)</span>
                 </div>
-                <!-- 改为展示行 -->
                 <div class="price-display-row" id="lpPriceDisplay">
                     1 USDT = <span class="price-eq">--</span> TOKEN
                 </div>
@@ -268,7 +262,6 @@
 
     <script>
     (function() {
-        // ==================== 配置 ====================
         var currentDEX = 'pancake';
         var ROUTERS = {
             pancake: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
@@ -318,7 +311,6 @@
 
         var lpTokenAddress = null;
         var lpTokenSymbol = 'TOKEN';
-        // 新增：存储当前价格（1 USDT = ? TOKEN）
         var lpPriceRate = 0;
 
         var PCS_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2';
@@ -333,7 +325,6 @@
             }
         }
 
-        // 更新价格显示行
         function updatePriceDisplay() {
             var display = $('lpPriceDisplay');
             if (!display) return;
@@ -559,9 +550,6 @@
             $('lpTokenBtnFirst').textContent = secondBtn;
             $('lpTokenBtnSecond').textContent = firstBtn;
         };
-
-        // 其余函数保持不变，但移除所有与 lpTokenPrice 相关的代码
-        // 包括之前对 lpTokenPrice 的 addEventListener 全部删除
 
         function saveTradeRecord(record) {
             try {
@@ -822,6 +810,7 @@
             }).catch(function() { return false; });
         }
 
+        // ====== 修复搜索合约获取信息失败 ======
         $('lpSearchBtn').addEventListener('click', async function() {
             var addr = $('lpContractSearch').value.trim();
             if (!web3 || !addr) return;
@@ -840,42 +829,52 @@
                 }
 
                 var contract = new web3.eth.Contract(ERC20_ABI, addr);
-                var symbol = await contract.methods.symbol().call();
+                var symbol;
+                // 容错获取符号
+                try {
+                    symbol = await contract.methods.symbol().call();
+                } catch (e1) {
+                    try {
+                        symbol = await contract.methods.name().call();
+                    } catch (e2) {
+                        symbol = addr.substring(0, 8) + '...';
+                    }
+                }
+
                 var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
                 var usdtAddr = TOKEN_ADDRESSES['USDT'];
                 var pair = await factoryContract.methods.getPair(addr, usdtAddr).call();
+                
+                lpTokenAddress = addr;
+                updateLPTokenDisplay(symbol);
+                
                 if (pair !== '0x0000000000000000000000000000000000000000') {
-                    lpTokenAddress = addr;
-                    updateLPTokenDisplay(symbol);
                     parent.showToast('已找到 ' + symbol + '/USDT 交易对，可添加流动性', 'success');
+                } else {
+                    parent.showToast('未找到与 USDT 的交易对，仍可尝试创建', 'info');
+                }
 
-                    var tokenPrice = await fetchTokenPriceInUSDT(addr);
-                    if (tokenPrice > 0) {
-                        lpPriceRate = 1 / tokenPrice;
-                    } else {
-                        lpPriceRate = 0;
-                    }
-                    updatePriceDisplay();
+                // 尝试获取价格
+                var tokenPrice = await fetchTokenPriceInUSDT(addr);
+                if (tokenPrice > 0) {
+                    lpPriceRate = 1 / tokenPrice;
+                } else {
+                    lpPriceRate = 0;
+                }
+                updatePriceDisplay();
+
+                // 尝试获取交易记录
+                if (pair !== '0x0000000000000000000000000000000000000000') {
                     fetchPairSwaps(pair, symbol);
                 } else {
-                    lpTokenAddress = addr;
-                    updateLPTokenDisplay(symbol);
-                    parent.showToast('未找到与 USDT 的交易对，仍可尝试创建', 'info');
-                    var tokenPrice2 = await fetchTokenPriceInUSDT(addr);
-                    if (tokenPrice2 > 0) {
-                        lpPriceRate = 1 / tokenPrice2;
-                    } else {
-                        lpPriceRate = 0;
-                    }
-                    updatePriceDisplay();
                     var pair2 = await factoryContract.methods.getPair(addr, WBNB).call();
                     if (pair2 !== '0x0000000000000000000000000000000000000000') {
                         fetchPairSwaps(pair2, symbol);
                     }
                 }
+
                 $('lpContractSearch').value = symbol;
                 updateLPBalances();
-                // 清空数量输入
                 $('lpAmountFirst').value = '';
                 $('lpAmountSecond').value = '';
             } catch (e) {
@@ -885,7 +884,6 @@
             }
         });
 
-        // 数量输入联动（使用 lpPriceRate）
         $('lpAmountFirst').addEventListener('input', function() {
             var usdtAmt = parseFloat(this.value);
             if (!isNaN(usdtAmt) && lpPriceRate > 0) {
