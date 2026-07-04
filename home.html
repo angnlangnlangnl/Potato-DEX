@@ -129,7 +129,6 @@
         }
         .hide { display: none !important; }
 
-        /* 交易记录卡片 */
         .recent-trade-card { margin-top: 0; }
         .trade-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .trade-record-title { font-size: 16px; font-weight: bold; color: #f0b90b; }
@@ -214,11 +213,11 @@
             </div>
             <div class="lp-input-row">
                 <div class="lp-label-row">
-                    <span class="lp-label">代币实时价格 (USDT)</span>
+                    <span class="lp-label">当前价格 (1 USDT = ? TOKEN)</span>
                 </div>
                 <div class="price-row">
                     <input type="number" id="lpTokenPrice" placeholder="" step="any">
-                    <span class="price-calc" id="lpPriceCalc">1 USDT = -- TOKEN</span>
+                    <span class="price-calc" id="lpPriceCalc">1 TOKEN = -- USDT</span>
                 </div>
             </div>
             <div class="lp-input-row">
@@ -545,17 +544,15 @@
             $('lpTokenBtnFirst').textContent = secondBtn;
             $('lpTokenBtnSecond').textContent = firstBtn;
 
+            // 交换后价格含义反转：原来 1U=N token，现在变为 1 token = 1/N USDT
             var priceInput = $('lpTokenPrice');
-            var price = parseFloat(priceInput.value);
-            if (!isNaN(price) && price > 0) {
-                priceInput.value = (1 / price).toFixed(6);
-                var calcEl = $('lpPriceCalc');
-                var currentCalc = calcEl.textContent;
-                if (currentCalc.includes('USDT')) {
-                    calcEl.textContent = '1 ' + lpTokenSymbol + ' = ' + (1/price).toFixed(6) + ' USDT';
-                } else {
-                    calcEl.textContent = '1 USDT = ' + price.toFixed(6) + ' ' + lpTokenSymbol;
-                }
+            var rate = parseFloat(priceInput.value); // 当前是 1U = rate token
+            if (!isNaN(rate) && rate > 0) {
+                var newRate = 1 / rate;
+                priceInput.value = newRate.toFixed(6);
+                $('lpPriceCalc').textContent = '1 TOKEN = ' + (1/newRate).toFixed(6) + ' USDT';
+            } else {
+                $('lpPriceCalc').textContent = '1 TOKEN = -- USDT';
             }
         };
 
@@ -739,13 +736,14 @@
         function updateLPTokenDisplay(symbol) {
             lpTokenSymbol = symbol || 'TOKEN';
             $('lpTokenBtnSecond').textContent = lpTokenSymbol;
-            $('lpPriceCalc').textContent = '1 USDT = -- ' + lpTokenSymbol;
-            var price = parseFloat($('lpTokenPrice').value);
-            if (!isNaN(price) && price > 0) {
-                $('lpPriceCalc').textContent = '1 USDT = ' + (1/price).toFixed(6) + ' ' + lpTokenSymbol;
+            $('lpPriceCalc').textContent = '1 TOKEN = -- USDT';
+            var rate = parseFloat($('lpTokenPrice').value); // 1U=rate TOKEN
+            if (!isNaN(rate) && rate > 0) {
+                $('lpPriceCalc').textContent = '1 TOKEN = ' + (1/rate).toFixed(6) + ' USDT';
             }
         }
 
+        // 获取代币价格（返回 1 TOKEN = ? USDT）
         async function fetchTokenPriceInUSDT(tokenAddr) {
             var usdtAddr = TOKEN_ADDRESSES['USDT'];
             var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
@@ -755,7 +753,7 @@
                 var oneUnit = decimals === 18 ? web3.utils.toWei('1', 'ether') : BigInt(10 ** decimals).toString();
                 var amounts = await routerContract.methods.getAmountsOut(oneUnit, path).call();
                 var usdtAmount = parseFloat(web3.utils.fromWei(amounts[1], 'ether'));
-                return usdtAmount;
+                return usdtAmount; // 1代币 = ? USDT
             } catch (e) {
                 path = [tokenAddr, WBNB, usdtAddr];
                 try {
@@ -851,11 +849,16 @@
                     lpTokenAddress = addr;
                     updateLPTokenDisplay(symbol);
                     parent.showToast('已找到 ' + symbol + '/USDT 交易对，可添加流动性', 'success');
-                    var price = await fetchTokenPriceInUSDT(addr);
+
+                    // 获取价格并填入 1 USDT = ? TOKEN (即 1/price)
+                    var price = await fetchTokenPriceInUSDT(addr); // 1代币 = ? USDT
                     if (price > 0) {
-                        $('lpTokenPrice').value = price.toFixed(6);
-                        var event = new Event('input', { bubbles: true });
-                        $('lpTokenPrice').dispatchEvent(event);
+                        var rate = 1 / price;
+                        $('lpTokenPrice').value = rate.toFixed(6);
+                        $('lpPriceCalc').textContent = '1 TOKEN = ' + price.toFixed(6) + ' USDT';
+                        // 触发联动
+                        var ev = new Event('input', { bubbles: true });
+                        $('lpTokenPrice').dispatchEvent(ev);
                     }
                     fetchPairSwaps(pair, symbol);
                 } else {
@@ -864,7 +867,9 @@
                     parent.showToast('未找到与 USDT 的交易对，仍可尝试创建', 'info');
                     var price2 = await fetchTokenPriceInUSDT(addr);
                     if (price2 > 0) {
-                        $('lpTokenPrice').value = price2.toFixed(6);
+                        var rate2 = 1 / price2;
+                        $('lpTokenPrice').value = rate2.toFixed(6);
+                        $('lpPriceCalc').textContent = '1 TOKEN = ' + price2.toFixed(6) + ' USDT';
                         $('lpTokenPrice').dispatchEvent(new Event('input', { bubbles: true }));
                     }
                     var pair2 = await factoryContract.methods.getPair(addr, WBNB).call();
@@ -881,40 +886,41 @@
             }
         });
 
+        // 修改后的输入监听，使用 rate = 1U=多少代币
         $('lpTokenPrice').addEventListener('input', function() {
-            var price = parseFloat(this.value);
-            if (!isNaN(price) && price > 0) {
-                $('lpPriceCalc').textContent = '1 USDT = ' + (1/price).toFixed(6) + ' ' + lpTokenSymbol;
+            var rate = parseFloat(this.value); // 1 USDT = rate TOKEN
+            if (!isNaN(rate) && rate > 0) {
+                $('lpPriceCalc').textContent = '1 TOKEN = ' + (1/rate).toFixed(6) + ' USDT';
                 var usdtAmt = parseFloat($('lpAmountFirst').value) || 0;
-                if (usdtAmt > 0) $('lpAmountSecond').value = (usdtAmt / price).toFixed(6);
+                if (usdtAmt > 0) $('lpAmountSecond').value = (usdtAmt * rate).toFixed(6);
             } else {
-                $('lpPriceCalc').textContent = '1 USDT = -- ' + lpTokenSymbol;
+                $('lpPriceCalc').textContent = '1 TOKEN = -- USDT';
             }
         });
         $('lpAmountFirst').addEventListener('input', function() {
             var usdtAmt = parseFloat(this.value);
-            var price = parseFloat($('lpTokenPrice').value);
-            if (!isNaN(usdtAmt) && !isNaN(price) && price > 0) {
-                $('lpAmountSecond').value = (usdtAmt / price).toFixed(6);
+            var rate = parseFloat($('lpTokenPrice').value); // 1U = rate代币
+            if (!isNaN(usdtAmt) && !isNaN(rate) && rate > 0) {
+                $('lpAmountSecond').value = (usdtAmt * rate).toFixed(6);
             }
         });
         $('lpAmountSecond').addEventListener('input', function() {
             var tokenAmt = parseFloat(this.value);
-            var price = parseFloat($('lpTokenPrice').value);
-            if (!isNaN(tokenAmt) && !isNaN(price) && price > 0) {
-                $('lpAmountFirst').value = (tokenAmt * price).toFixed(6);
+            var rate = parseFloat($('lpTokenPrice').value);
+            if (!isNaN(tokenAmt) && !isNaN(rate) && rate > 0) {
+                $('lpAmountFirst').value = (tokenAmt / rate).toFixed(6);
             }
         });
 
         window.addLiquidity = function() {
-            var price = $('lpTokenPrice').value;
+            var rate = parseFloat($('lpTokenPrice').value);
             var usdt = $('lpAmountFirst').value;
             var tokenAmt = $('lpAmountSecond').value;
             if (!lpTokenAddress) {
                 parent.showToast('请先搜索并加载代币合约', 'error');
                 return;
             }
-            if (!price || !usdt) {
+            if (!rate || !usdt) {
                 parent.showToast('请输入价格和USDT数量', 'error');
                 return;
             }
