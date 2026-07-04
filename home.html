@@ -214,10 +214,11 @@
             <div class="lp-input-row">
                 <div class="lp-label-row">
                     <span class="lp-label">当前价格 (1 USDT = ? TOKEN)</span>
+                    <span style="color:#4ecca3; font-size:13px; font-weight:500;" id="lpCalcDisplay">1 USDT = -- TOKEN</span>
                 </div>
                 <div class="price-row">
                     <input type="number" id="lpTokenPrice" placeholder="" step="any">
-                    <span class="price-calc" id="lpPriceCalc">1 USDT = -- TOKEN</span>
+                    <!-- 移除原来的 price-calc -->
                 </div>
             </div>
             <div class="lp-input-row">
@@ -330,6 +331,23 @@
             }
         }
 
+        // 更新标签右侧计算器显示
+        function updateCalcDisplay(usdtAmount) {
+            var rate = parseFloat($('lpTokenPrice').value);
+            var display = $('lpCalcDisplay');
+            if (!display) return;
+            if (isNaN(rate) || rate <= 0) {
+                display.textContent = '1 USDT = -- ' + lpTokenSymbol;
+                return;
+            }
+            if (usdtAmount !== undefined && !isNaN(usdtAmount) && usdtAmount >= 0) {
+                var tokenAmt = usdtAmount * rate;
+                display.textContent = usdtAmount + ' USDT = ' + tokenAmt.toFixed(6) + ' ' + lpTokenSymbol;
+            } else {
+                display.textContent = '1 USDT = ' + rate.toFixed(6) + ' ' + lpTokenSymbol;
+            }
+        }
+
         window.showSwapView = function() {
             document.getElementById('swapView').classList.remove('hide');
             document.getElementById('lpView').classList.add('hide');
@@ -345,6 +363,7 @@
             document.getElementById('tabLP').classList.add('active');
             updateLPButton();
             updateLPBalances();
+            updateCalcDisplay();
         };
 
         window.switchDEX = function(dex) {
@@ -545,8 +564,8 @@
             $('lpTokenBtnFirst').textContent = secondBtn;
             $('lpTokenBtnSecond').textContent = firstBtn;
 
-            // 价格含义不变（始终 1USDT = ? token）
-            // 无需改变 lpTokenPrice 和 lpPriceCalc
+            // 更新计算器显示
+            updateCalcDisplay(parseFloat($('lpAmountFirst').value));
         };
 
         function saveTradeRecord(record) {
@@ -729,11 +748,7 @@
         function updateLPTokenDisplay(symbol) {
             lpTokenSymbol = symbol || 'TOKEN';
             $('lpTokenBtnSecond').textContent = lpTokenSymbol;
-            $('lpPriceCalc').textContent = '1 USDT = -- ' + lpTokenSymbol;
-            var rate = parseFloat($('lpTokenPrice').value);
-            if (!isNaN(rate) && rate > 0) {
-                $('lpPriceCalc').textContent = '1 USDT = ' + rate.toFixed(6) + ' ' + lpTokenSymbol;
-            }
+            updateCalcDisplay();
         }
 
         async function fetchTokenPriceInUSDT(tokenAddr) {
@@ -744,7 +759,7 @@
                 var decimals = await new web3.eth.Contract(ERC20_ABI, tokenAddr).methods.decimals().call();
                 var oneUnit = decimals === 18 ? web3.utils.toWei('1', 'ether') : BigInt(10 ** decimals).toString();
                 var amounts = await routerContract.methods.getAmountsOut(oneUnit, path).call();
-                return parseFloat(web3.utils.fromWei(amounts[1], 'ether')); // 1代币 = ? USDT
+                return parseFloat(web3.utils.fromWei(amounts[1], 'ether'));
             } catch (e) {
                 path = [tokenAddr, WBNB, usdtAddr];
                 try {
@@ -839,11 +854,11 @@
                     updateLPTokenDisplay(symbol);
                     parent.showToast('已找到 ' + symbol + '/USDT 交易对，可添加流动性', 'success');
 
-                    var tokenPrice = await fetchTokenPriceInUSDT(addr); // 1代币 = ? USDT
+                    var tokenPrice = await fetchTokenPriceInUSDT(addr);
                     if (tokenPrice > 0) {
-                        var rate = 1 / tokenPrice; // 1 USDT = rate TOKEN
+                        var rate = 1 / tokenPrice;
                         $('lpTokenPrice').value = rate.toFixed(6);
-                        $('lpPriceCalc').textContent = '1 USDT = ' + rate.toFixed(6) + ' ' + symbol;
+                        updateCalcDisplay();
                         var ev = new Event('input', { bubbles: true });
                         $('lpTokenPrice').dispatchEvent(ev);
                     }
@@ -856,7 +871,7 @@
                     if (tokenPrice2 > 0) {
                         var rate2 = 1 / tokenPrice2;
                         $('lpTokenPrice').value = rate2.toFixed(6);
-                        $('lpPriceCalc').textContent = '1 USDT = ' + rate2.toFixed(6) + ' ' + symbol;
+                        updateCalcDisplay();
                         $('lpTokenPrice').dispatchEvent(new Event('input', { bubbles: true }));
                     }
                     var pair2 = await factoryContract.methods.getPair(addr, WBNB).call();
@@ -873,29 +888,38 @@
             }
         });
 
-        // 价格输入监听（rate = 1 USDT 兑换多少 TOKEN）
+        // 价格输入监听
         $('lpTokenPrice').addEventListener('input', function() {
             var rate = parseFloat(this.value);
             if (!isNaN(rate) && rate > 0) {
-                $('lpPriceCalc').textContent = '1 USDT = ' + rate.toFixed(6) + ' ' + lpTokenSymbol;
                 var usdtAmt = parseFloat($('lpAmountFirst').value) || 0;
-                if (usdtAmt > 0) $('lpAmountSecond').value = (usdtAmt * rate).toFixed(6);
+                $('lpAmountSecond').value = (usdtAmt * rate).toFixed(6);
+                updateCalcDisplay(usdtAmt);
             } else {
-                $('lpPriceCalc').textContent = '1 USDT = -- ' + lpTokenSymbol;
+                $('lpAmountSecond').value = '';
+                updateCalcDisplay(undefined);
             }
         });
+
         $('lpAmountFirst').addEventListener('input', function() {
             var usdtAmt = parseFloat(this.value);
             var rate = parseFloat($('lpTokenPrice').value);
             if (!isNaN(usdtAmt) && !isNaN(rate) && rate > 0) {
                 $('lpAmountSecond').value = (usdtAmt * rate).toFixed(6);
+                updateCalcDisplay(usdtAmt);
+            } else {
+                $('lpAmountSecond').value = '';
+                updateCalcDisplay(usdtAmt);
             }
         });
+
         $('lpAmountSecond').addEventListener('input', function() {
             var tokenAmt = parseFloat(this.value);
             var rate = parseFloat($('lpTokenPrice').value);
             if (!isNaN(tokenAmt) && !isNaN(rate) && rate > 0) {
-                $('lpAmountFirst').value = (tokenAmt / rate).toFixed(6);
+                var usdt = (tokenAmt / rate).toFixed(6);
+                $('lpAmountFirst').value = usdt;
+                updateCalcDisplay(parseFloat(usdt));
             }
         });
 
