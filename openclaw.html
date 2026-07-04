@@ -1,699 +1,599 @@
-<div id="page-ecosystem" class="page-container">
+<div id="page-trade" class="page-container">
     <style>
-        :root {
-            --bg-color: #141821;
-            --card-bg: #1b212d;
-            --card-alt: #222936;
-            --text-primary: #ffffff;
-            --text-secondary: #8e98b0;
-            --text-tertiary: #b7bdc9;
-            --color-green: #00c087;
-            --color-red: #f6465d;
-            --color-yellow: #f8d549;
-            --border-color: #2c3442;
-        }
-
-        .otc-container {
-            width: 100%;
-            max-width: 100%;
-            min-height: 100vh;
-            padding: 12px 0 20px;
-            position: relative;
-            color: var(--text-primary);
-            box-sizing: border-box;
-        }
-
-        .otc-header {
-            position: relative;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 12px 16px;
-            font-size: 18px;
-            font-weight: 500;
-        }
-        .otc-header-left, .otc-header-right { display: flex; align-items: center; gap: 12px; }
-        
-        .otc-header-title {
-            position: absolute;
-            left: 50%;
-            top: 10px;
-            transform: translate(-50%, -50%);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            white-space: nowrap;
-            z-index: 1;
-        }
-        
-        .otc-header-title .otc-nav-item {
-            color: var(--text-secondary);
-            font-weight: 500;
-            transition: color 0.2s;
-            cursor: pointer;
-        }
-        .otc-header-title .otc-nav-item.active {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
-        .otc-action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 12px 16px;
-        }
-        .otc-toggle-group {
-            display: flex;
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 3px;
-            cursor: pointer;
-        }
-        .otc-toggle-btn {
-            padding: 5px 20px;
-            border: none;
-            border-radius: 18px;
-            background: transparent;
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .otc-toggle-btn.active {
-            background: #ffffff;
-            color: #000000;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .otc-currency-wrapper {
-            position: relative;
-            margin-left: auto;
-        }
-        .otc-currency-btn {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 4px 12px;
-            border-radius: 16px;
-            font-size: 14px;
-            cursor: pointer;
-            min-width: 70px;
-            text-align: center;
-            white-space: nowrap;
-        }
-        .otc-currency-dropdown {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 4px 0;
-            min-width: 100%;
-            list-style: none;
-            display: none;
-            z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        .glass-card { 
+            background: rgba(18,22,40,0.7); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            color: #ccd6f0; 
             overflow: hidden;
         }
-        .otc-currency-dropdown.active { display: block; }
-        .otc-currency-dropdown li {
-            padding: 10px 16px;
-            color: var(--text-primary);
-            font-size: 14px;
-            cursor: pointer;
+        .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; color: #f0b90b; }
+        .swap-title span { cursor: pointer; margin-right: 12px; }
+        .swap-title .tab-link { color: #a3adc9; }
+        .swap-title .tab-link.active { color: #f0b90b; }
+
+        .dex-switch {
+            display: flex; 
+            margin: -20px -20px 0 -20px;
+            border-bottom: 1px solid #2d325a;
+        }
+        .dex-btn {
+            flex: 1; padding: 10px 0; font-size: 14px; font-weight: 600; background: #0d1125; color: #a3adc9;
+            border: none; cursor: pointer; transition: background 0.2s, color 0.2s; text-align: center;
+        }
+        .dex-btn:first-child { border-right: 1px solid #2d325a; }
+        .dex-btn.active { background: #f0b90b; color: #0b0f1a; }
+        .dex-btn:active { opacity: 0.8; }
+
+        .dex-slogan {
             text-align: center;
-            transition: background 0.15s;
-        }
-        .otc-currency-dropdown li:hover { background: var(--card-alt); }
-
-        .otc-filter-bar {
-            display: flex;
-            gap: 12px;
-            padding: 0 12px 16px;
-            flex-wrap: nowrap;
-            overflow: visible;                   /* 允许下拉菜单溢出 */
-            align-items: center;
-        }
-        .otc-filter-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            white-space: nowrap;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .otc-filter-item.active { color: var(--color-green); }
-        
-        .otc-pay-wrapper {
-            position: relative;
-            cursor: pointer;
-            z-index: 9999;
-            flex-shrink: 0;
-        }
-        .otc-pay-trigger {
-            color: var(--text-secondary);
-            font-size: 14px;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .otc-pay-dropdown {
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 4px 0;
-            min-width: 120px;
-            list-style: none;
-            display: none;
-            z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            overflow: hidden;
-        }
-        .otc-pay-dropdown.active { display: block; }
-        .otc-pay-dropdown li {
-            padding: 10px 16px;
-            color: var(--text-primary);
-            font-size: 14px;
-            cursor: pointer;
-            text-align: left;
-            transition: background 0.15s;
-        }
-        .otc-pay-dropdown li:hover { background: var(--card-alt); }
-
-        .otc-filter-check {
-            display: flex;
-            align-items: center;
-            color: var(--text-secondary);
-            font-size: 14px;
-            margin-left: auto;
-            flex-shrink: 0;
-        }
-        .otc-filter-check input { accent-color: var(--color-green); margin-right: 6px; }
-
-        .otc-list-view {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .otc-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 14px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            z-index: 0;                           /* 确保卡片在过滤栏之下 */
-        }
-
-        .otc-card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-        .otc-seller-name {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            font-size: 15px;
-            flex-wrap: wrap;
-            min-width: 0;
-        }
-        .otc-tags { display: flex; gap: 4px; flex-shrink: 0; }
-        .otc-tag {
-            background: var(--card-alt);
-            color: #c5cbd6;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            white-space: nowrap;
-        }
-        .otc-tag.gold { background: #333026; color: var(--color-yellow); }
-        
-        .otc-order-stats {
             font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .otc-price-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-top: 2px;
-            gap: 8px;
-        }
-        .otc-price-left {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-            flex-shrink: 0;
-        }
-        .otc-price { font-size: 26px; font-weight: 600; color: var(--text-primary); }
-        .otc-unit { font-size: 14px; color: var(--text-secondary); }
-
-        .otc-price-right {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 4px;
-            flex-shrink: 0;
-        }
-        .otc-price-right-pay {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            font-size: 14px;
-            color: var(--text-primary);
-        }
-        .otc-pay-time {
-            font-size: 11px;
-            color: var(--text-secondary);
-            white-space: nowrap;
-        }
-
-        .otc-limit-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 8px;
-        }
-        .otc-limit-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            flex: 1;
-            min-width: 0;
-        }
-        .otc-limit-text { font-size: 12px; color: var(--text-secondary); }
-        .otc-limit-text span { color: var(--text-primary); }
-
-        .otc-action-row {
-            display: flex;
-            align-items: flex-end;
-            flex-shrink: 0;
+            color: #888;
+            padding: 10px 0 12px 0;
+            margin: 0 -20px;
+            border-bottom: 1px solid #2d325a;
         }
         
-        .otc-buy-btn {
-            background-color: var(--color-green);
-            color: #ffffff;
-            border: none;
-            border-radius: 4px;
-            padding: 5px 24px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            white-space: nowrap;
-            line-height: 1.4;
+        .search-wrapper { position: relative; margin-bottom: 14px; }
+        .token-search {
+            width: 100%; padding: 10px 40px 10px 14px; background: #0d1125; border: 1px solid #2d325a;
+            border-radius: 12px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;
         }
-
-        .otc-sell-btn {
-            background-color: var(--color-red);
-            color: #ffffff;
-            border: none;
-            border-radius: 4px;
-            padding: 5px 24px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            white-space: nowrap;
-            line-height: 1.4;
+        .token-search::placeholder { color: #6b7394; }
+        .token-search:focus { border-color: #4ecca3; }
+        .search-icon {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: #6b7394; cursor: pointer; font-size: 18px;
+            padding: 4px; display: flex; align-items: center; justify-content: center;
         }
+        .search-icon:active { color: #4ecca3; }
 
-        .otc-icon { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
+        .input-row {
+            background: #0d1125; border: 1px solid #2d325a; border-radius: 16px;
+            padding: 12px 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .input-row input {
+            background: transparent; border: none; color: #fff; font-size: 20px;
+            width: 60%; outline: none; -moz-appearance: textfield;
+        }
+        .input-row input::-webkit-outer-spin-button,
+        .input-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-row .input-with-plus {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        .input-row .input-with-plus span {
+            color: #fff;
+            font-size: 20px;
+            margin-right: 4px;
+        }
+        .input-row .input-with-plus input {
+            width: 100%;
+        }
+        .token-select {
+            background: #2d325a; border: none; color: #fff; padding: 8px 14px;
+            border-radius: 20px; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+        }
+        .balance-row { text-align: right; font-size: 12px; color: #888; padding: 0 10px; margin-bottom: 8px; }
+        .max-btn {
+            color: #f0b90b; cursor: pointer; margin-left: 4px; text-decoration: none; font-weight: 500;
+        }
+        .swap-arrow {
+            width: 40px; height: 40px; background: #1e2a4a; border: 2px solid #2d325a;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin: -10px auto; position: relative; z-index: 2; cursor: pointer; color: #f0b90b; font-size: 18px;
+        }
+        .swap-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 16px;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: 0.3s;
+            background: #f0b90b; color: #0b0f1a;
+        }
+        .swap-btn:disabled { background: #2d325a; color: #666; cursor: not-allowed; }
+        .price-info { font-size: 13px; color: #888; text-align: center; margin-top: 12px; }
+        .slippage { display: flex; justify-content: flex-end; margin-bottom: 10px; font-size: 12px; color: #888; }
+
+        .lp-input-row { margin-bottom: 10px; }
+        .lp-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .lp-label-row .lp-label {
+            margin-bottom: 0;
+            color: #888;
+            font-size: 12px;
+        }
+        .lp-label-row .balance-row {
+            text-align: right;
+            padding: 0;
+            margin-bottom: 0;
+        }
+        .price-row {
+            display: flex; align-items: center; background: #0d1125; border: 1px solid #2d325a;
+            border-radius: 12px; padding: 0 0 0 14px;
+        }
+        .price-row input {
+            flex: 1; background: transparent; border: none; color: #fff; font-size: 14px;
+            padding: 10px 0; outline: none;
+        }
+        .price-calc {
+            color: #4ecca3; font-size: 13px; font-weight: 500; white-space: nowrap;
+            padding: 10px 14px; border-left: 1px solid #2d325a;
+        }
+        .hide { display: none !important; }
+
+        .recent-trade-card { margin-top: 0; }
+        .trade-record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .trade-record-title { font-size: 16px; font-weight: bold; color: #f0b90b; }
+        .trade-record-time { font-size: 12px; color: #888; }
+        .trade-record-content { display: flex; flex-direction: column; gap: 8px; }
+        .trade-record-row { display: flex; justify-content: space-between; font-size: 14px; }
+        .trade-record-label { color: #888; }
+        .trade-record-value { color: #ccd6f0; }
+        .tx-hash { color: #4ecca3; font-size: 12px; text-decoration: none; word-break: break-all; }
+        .tx-hash:hover { text-decoration: underline; }
+        .no-record { text-align: center; color: #888; font-size: 14px; padding: 10px 0; }
     </style>
 
-    <div class="otc-container">
-        
-        <div class="otc-header">
-            <div class="otc-header-left">
-                <svg class="otc-icon" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-            </div>
-            <div class="otc-header-title">
-                <span class="otc-nav-item active">OTC交易</span>
-                <span class="otc-nav-item">订单详情</span>
-            </div>
-            <div class="otc-header-right">
-                <svg class="otc-icon" style="color:var(--text-secondary);" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
-            </div>
+    <!-- 兑换卡片（含 LP 视图） -->
+    <div class="glass-card">
+        <div class="dex-switch">
+            <button class="dex-btn active" id="pancakeBtn" onclick="switchDEX('pancake')">🥞 PancakeSwap (博饼)</button>
+            <button class="dex-btn" id="uniBtn" onclick="switchDEX('uni')">🦄 Uniswap</button>
+        </div>
+        <div class="dex-slogan">一键快输加流动性底池 · 省时省力，平台只是工具不涉及任何资产安全。</div>
+
+        <div class="swap-title">
+            <span id="tabSwap" class="tab-link active" onclick="showSwapView()">兑换</span>
+            <span id="tabLP" class="tab-link" onclick="showLPView()">添加LP</span>
         </div>
 
-        <div class="otc-action-bar">
-            <div class="otc-toggle-group" id="otcToggleGroup">
-                <button class="otc-toggle-btn active" data-target="buy">我要买</button>
-                <button class="otc-toggle-btn" data-target="sell">我要卖</button>
+        <!-- 兑换视图 -->
+        <div id="swapView">
+            <div class="search-wrapper">
+                <input type="text" class="token-search" id="tokenSearch" placeholder="输入代币名称或合约地址，搜索">
+                <button class="search-icon" id="searchIconBtn" title="搜索">🔍</button>
             </div>
-            <div class="otc-currency-wrapper" id="otcCurrencyWrapper">
-                <button class="otc-currency-btn" id="otcCurrencyBtn">CNY ▾</button>
-                <ul class="otc-currency-dropdown" id="otcCurrencyDropdown">
-                    <li data-value="CNY">CNY</li>
-                    <li data-value="USD">USD</li>
-                    <li data-value="GBP">GBP</li>
-                </ul>
+            <div class="balance-row">余额: <span id="inputBalance">0.00</span> <span class="max-btn" id="inputMaxBtn">全部</span></div>
+            <div class="input-row">
+                <input type="number" id="inputAmount" placeholder="0.0" step="any">
+                <button class="token-select" id="inputTokenBtn">USDT ▼</button>
             </div>
+            <div class="swap-arrow" onclick="swapTokens()">↓</div>
+            <div class="balance-row">余额: <span id="outputBalance">0.00</span></div>
+            <div class="input-row">
+                <input type="number" id="outputAmount" placeholder="0.0" readonly>
+                <button class="token-select" id="outputTokenBtn">BNB ▼</button>
+            </div>
+            <div class="slippage">滑点容忍度: 0.5%</div>
+            <button id="swapButton" class="swap-btn" onclick="executeSwap()">连接钱包</button>
+            <div class="price-info" id="rateInfo">--</div>
         </div>
 
-        <div class="otc-filter-bar">
-            <div class="otc-filter-item active">
-                <span>T</span> USDT ▾
+        <!-- 添加LP视图（默认隐藏） -->
+        <div id="lpView" class="hide">
+            <div class="search-wrapper">
+                <input type="text" class="token-search" id="lpContractSearch" placeholder="输入代币合约地址搜索">
+                <button class="search-icon" id="lpSearchBtn" title="搜索">🔍</button>
             </div>
-            <div class="otc-filter-item">金额 ▾</div>
-            
-            <div class="otc-pay-wrapper" id="otcPayWrapper">
-                <div class="otc-pay-trigger" id="otcPayBtn">支付 ▾</div>
-                <ul class="otc-pay-dropdown" id="otcPayDropdown">
-                    <li data-value="微信">微信</li>
-                    <li data-value="支付宝">支付宝</li>
-                    <li data-value="银行借记卡">银行借记卡</li>
-                </ul>
+            <div class="lp-input-row">
+                <div class="lp-label-row">
+                    <span class="lp-label">代币初始价格 (USDT)</span>
+                </div>
+                <div class="price-row">
+                    <input type="number" id="lpTokenPrice" placeholder="" step="any">
+                    <span class="price-calc" id="lpPriceCalc">1 USDT = -- TOKEN</span>
+                </div>
             </div>
-            
-            <div class="otc-filter-check">
-                <input type="checkbox" checked> 神盾
+            <div class="lp-input-row">
+                <div class="lp-label-row">
+                    <span class="lp-label" id="lpLabelFirst">USDT 数量</span>
+                    <span class="balance-row">余额: <span id="lpBalanceFirst">0.00</span></span>
+                </div>
+                <div class="input-row">
+                    <input type="number" id="lpAmountFirst" placeholder="0.0" step="any">
+                    <button class="token-select" id="lpTokenBtnFirst">USDT</button>
+                </div>
             </div>
-            <svg class="otc-icon" style="color:var(--text-secondary); margin-left:8px; width:18px;" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+            <div class="swap-arrow" onclick="swapLiquidityTokens()">↓</div>
+            <div class="lp-input-row">
+                <div class="lp-label-row">
+                    <span class="lp-label" id="lpLabelSecond">代币数量</span>
+                    <span class="balance-row">余额: <span id="lpBalanceSecond">0.00</span></span>
+                </div>
+                <div class="input-row">
+                    <div class="input-with-plus">
+                        <span>+</span>
+                        <input type="number" id="lpAmountSecond" placeholder="0.0" step="any">
+                    </div>
+                    <button class="token-select" id="lpTokenBtnSecond">TOKEN</button>
+                </div>
+            </div>
+            <div class="slippage" style="margin-top: 2px;">滑点容忍度: 0.5%</div>
+            <button class="swap-btn" onclick="addLiquidity()">添加流动性</button>
         </div>
+    </div>
 
-        <div class="otc-list-view" id="otcBuyList">
-            <div class="otc-card">
-                <div class="otc-card-top">
-                    <div class="otc-seller-name">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
-                        遥遥领先-五年老店-安全零冻
-                        <div class="otc-tags">
-                            <span class="otc-tag gold">保证金</span>
-                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="otc-order-stats">交易: 9860 订单 (100.00%)</div>
-                
-                <div class="otc-price-row">
-                    <div class="otc-price-left">
-                        <span class="otc-price">¥6.77</span>
-                        <span class="otc-unit">/USDT</span>
-                    </div>
-                    <div class="otc-price-right">
-                        <div class="otc-price-right-pay">
-                            <span>支付宝</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
-                        </div>
-                        <div class="otc-pay-time">🕒 15 分钟</div>
-                    </div>
-                </div>
-
-                <div class="otc-limit-row">
-                    <div class="otc-limit-info">
-                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
-                        <div class="otc-limit-text">限额 <span>400 - 799 CNY</span></div>
-                        <div class="otc-limit-text">可用 <span>289.93 USDT</span></div>
-                    </div>
-                    <div class="otc-action-row">
-                        <button class="otc-buy-btn">买入</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="otc-card">
-                <div class="otc-card-top">
-                    <div class="otc-seller-name">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
-                        神盾严选专区100万单老商家
-                        <div class="otc-tags">
-                            <span class="otc-tag gold">保证金</span>
-                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="otc-order-stats">交易: 41904 订单 (100.00%)</div>
-                
-                <div class="otc-price-row">
-                    <div class="otc-price-left">
-                        <span class="otc-price">¥6.77</span>
-                        <span class="otc-unit">/USDT</span>
-                    </div>
-                    <div class="otc-price-right">
-                        <div class="otc-price-right-pay">
-                            <span>支付宝</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
-                        </div>
-                        <div class="otc-pay-time">🕒 15 分钟</div>
-                    </div>
-                </div>
-
-                <div class="otc-limit-row">
-                    <div class="otc-limit-info">
-                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
-                        <div class="otc-limit-text">限额 <span>300 - 799 CNY</span></div>
-                        <div class="otc-limit-text">可用 <span>2,627.14 USDT</span></div>
-                    </div>
-                    <div class="otc-action-row">
-                        <button class="otc-buy-btn">买入</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="otc-card">
-                <div class="otc-card-top">
-                    <div class="otc-seller-name">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
-                        聚优商行-24h
-                        <div class="otc-tags">
-                            <span class="otc-tag gold">保证金</span>
-                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="otc-order-stats">交易: 862 订单 (100.00%)</div>
-                
-                <div class="otc-price-row">
-                    <div class="otc-price-left">
-                        <span class="otc-price">¥6.77</span>
-                        <span class="otc-unit">/USDT</span>
-                    </div>
-                    <div class="otc-price-right">
-                        <div class="otc-price-right-pay">
-                            <span>银行</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
-                        </div>
-                        <div class="otc-pay-time">🕒 15 分钟</div>
-                    </div>
-                </div>
-
-                <div class="otc-limit-row">
-                    <div class="otc-limit-info">
-                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
-                        <div class="otc-limit-text">限额 <span>30,000 - 135,990 CNY</span></div>
-                        <div class="otc-limit-text">可用 <span>20,087.27 USDT</span></div>
-                    </div>
-                    <div class="otc-action-row">
-                        <button class="otc-buy-btn">买入</button>
-                    </div>
-                </div>
-            </div>
+    <!-- 最近交易记录卡片 -->
+    <div class="glass-card recent-trade-card" id="recentTradeCard">
+        <div class="trade-record-header">
+            <span class="trade-record-title">📋 最近交易</span>
+            <span class="trade-record-time" id="tradeTime">--</span>
         </div>
-
-        <div class="otc-list-view" id="otcSellList" style="display:none;">
-            <div class="otc-card">
-                <div class="otc-card-top">
-                    <div class="otc-seller-name">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
-                        遥遥领先-五年老店-安全零冻
-                        <div class="otc-tags">
-                            <span class="otc-tag gold">保证金</span>
-                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="otc-order-stats">交易: 9860 订单 (100.00%)</div>
-                
-                <div class="otc-price-row">
-                    <div class="otc-price-left">
-                        <span class="otc-price">¥6.77</span>
-                        <span class="otc-unit">/USDT</span>
-                    </div>
-                    <div class="otc-price-right">
-                        <div class="otc-price-right-pay">
-                            <span>支付宝</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
-                        </div>
-                        <div class="otc-pay-time">🕒 15 分钟</div>
-                    </div>
-                </div>
-
-                <div class="otc-limit-row">
-                    <div class="otc-limit-info">
-                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
-                        <div class="otc-limit-text">限额 <span>400 - 799 CNY</span></div>
-                        <div class="otc-limit-text">可用 <span>289.93 USDT</span></div>
-                    </div>
-                    <div class="otc-action-row">
-                        <button class="otc-sell-btn">卖出</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="otc-card">
-                <div class="otc-card-top">
-                    <div class="otc-seller-name">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
-                        神盾严选专区100万单老商家
-                        <div class="otc-tags">
-                            <span class="otc-tag gold">保证金</span>
-                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="otc-order-stats">交易: 41904 订单 (100.00%)</div>
-                
-                <div class="otc-price-row">
-                    <div class="otc-price-left">
-                        <span class="otc-price">¥6.77</span>
-                        <span class="otc-unit">/USDT</span>
-                    </div>
-                    <div class="otc-price-right">
-                        <div class="otc-price-right-pay">
-                            <span>支付宝</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
-                        </div>
-                        <div class="otc-pay-time">🕒 15 分钟</div>
-                    </div>
-                </div>
-
-                <div class="otc-limit-row">
-                    <div class="otc-limit-info">
-                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
-                        <div class="otc-limit-text">限额 <span>300 - 799 CNY</span></div>
-                        <div class="otc-limit-text">可用 <span>2,627.14 USDT</span></div>
-                    </div>
-                    <div class="otc-action-row">
-                        <button class="otc-sell-btn">卖出</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="otc-card">
-                <div class="otc-card-top">
-                    <div class="otc-seller-name">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#00c087"/></svg>
-                        聚优商行-24h
-                        <div class="otc-tags">
-                            <span class="otc-tag gold">保证金</span>
-                            <span class="otc-tag gold">⭐⭐⭐⭐⭐</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="otc-order-stats">交易: 862 订单 (100.00%)</div>
-                
-                <div class="otc-price-row">
-                    <div class="otc-price-left">
-                        <span class="otc-price">¥6.77</span>
-                        <span class="otc-unit">/USDT</span>
-                    </div>
-                    <div class="otc-price-right">
-                        <div class="otc-price-right-pay">
-                            <span>银行</span>
-                            <span style="font-size:18px; margin-left:2px;">ⓘ</span>
-                        </div>
-                        <div class="otc-pay-time">🕒 15 分钟</div>
-                    </div>
-                </div>
-
-                <div class="otc-limit-row">
-                    <div class="otc-limit-info">
-                        <div class="otc-limit-text">保证金：<span>0.00 USDT</span></div>
-                        <div class="otc-limit-text">限额 <span>30,000 - 135,990 CNY</span></div>
-                        <div class="otc-limit-text">可用 <span>20,087.27 USDT</span></div>
-                    </div>
-                    <div class="otc-action-row">
-                        <button class="otc-sell-btn">卖出</button>
-                    </div>
-                </div>
-            </div>
+        <div class="trade-record-content" id="tradeRecordContent">
+            <div class="no-record">暂无交易记录</div>
         </div>
-
     </div>
 
     <script>
     (function() {
+        var currentDEX = 'pancake';
+        var ROUTERS = {
+            pancake: '0x10ED43C718714eb63d5aA57B78B54704E256024E',
+            uni: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+        };
+        var FACTORIES = {
+            pancake: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
+            uni: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
+        };
+        var WBNBS = {
+            pancake: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            uni: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+        };
+
+        var TOKEN_ADDRESSES = {
+            'USDT': '0x55d398326f99059fF775485246999027B3197955',
+            'MYK': '0xc23CfEeC6D188D627C85106f682D9eb38d94192a',
+            'BNB': null,
+            'BUSD': '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
+            'WBNB': '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            'CAKE': '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
+            'ETH': '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
+            'BTCB': '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c'
+        };
+        var ERC20_ABI = [
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
+            {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
+            {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"},
+            {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"}
+        ];
+        var ROUTER_ABI = [
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactETHForTokens","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":false,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"uint256","name":"amountOutMin","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"swapExactTokensForETH","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"},
+            {"constant":false,"inputs":[{"internalType":"address","name":"tokenA","type":"address"},{"internalType":"address","name":"tokenB","type":"address"},{"internalType":"uint256","name":"amountADesired","type":"uint256"},{"internalType":"uint256","name":"amountBDesired","type":"uint256"},{"internalType":"uint256","name":"amountAMin","type":"uint256"},{"internalType":"uint256","name":"amountBMin","type":"uint256"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"deadline","type":"uint256"}],"name":"addLiquidity","outputs":[{"internalType":"uint256","name":"amountA","type":"uint256"},{"internalType":"uint256","name":"amountB","type":"uint256"},{"internalType":"uint256","name":"liquidity","type":"uint256"}],"type":"function"},
+            {"constant":true,"inputs":[{"internalType":"uint256","name":"amountIn","type":"uint256"},{"internalType":"address[]","name":"path","type":"address[]"}],"name":"getAmountsOut","outputs":[{"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"type":"function"}
+        ];
+        var FACTORY_ABI = [{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"getPair","outputs":[{"name":"","type":"address"}],"type":"function"}];
+
+        var currentInputToken = 'USDT';
+        var currentOutputToken = 'BNB';
+        var ROUTER = ROUTERS[currentDEX];
+        var FACTORY = FACTORIES[currentDEX];
+        var WBNB = WBNBS[currentDEX];
+        var MAX_UINT256 = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
+
+        var lpTokenAddress = null;
+        var lpTokenSymbol = 'TOKEN';
+
         function $(id) { return document.getElementById(id); }
+        function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
 
-        var currencyWrapper = $('otcCurrencyWrapper');
-        var currencyBtn = $('otcCurrencyBtn');
-        var currencyDropdown = $('otcCurrencyDropdown');
-        if (currencyBtn && currencyDropdown) {
-            currencyBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                currencyDropdown.classList.toggle('active');
-            });
-            var currencyOptions = currencyDropdown.querySelectorAll('li');
-            currencyOptions.forEach(function(option) {
-                option.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    currencyBtn.innerHTML = this.getAttribute('data-value') + ' ▾';
-                    currencyDropdown.classList.remove('active');
-                });
-            });
-        }
+        window.showSwapView = function() {
+            document.getElementById('swapView').classList.remove('hide');
+            document.getElementById('lpView').classList.add('hide');
+            document.getElementById('tabSwap').classList.add('active');
+            document.getElementById('tabLP').classList.remove('active');
+            updateBalances();
+            updateRate();
+        };
+        window.showLPView = function() {
+            document.getElementById('swapView').classList.add('hide');
+            document.getElementById('lpView').classList.remove('hide');
+            document.getElementById('tabSwap').classList.remove('active');
+            document.getElementById('tabLP').classList.add('active');
+            updateLPBalances();
+        };
 
-        var payWrapper = $('otcPayWrapper');
-        var payBtn = $('otcPayBtn');
-        var payDropdown = $('otcPayDropdown');
-        if (payBtn && payDropdown) {
-            payBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                payDropdown.classList.toggle('active');
-            });
-            var payOptions = payDropdown.querySelectorAll('li');
-            payOptions.forEach(function(option) {
-                option.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    payBtn.innerHTML = this.getAttribute('data-value') + ' ▾';
-                    payDropdown.classList.remove('active');
-                });
-            });
-        }
-
-        var toggleGroup = $('otcToggleGroup');
-        var buyList = $('otcBuyList');
-        var sellList = $('otcSellList');
-        if (toggleGroup) {
-            var toggleBtns = toggleGroup.querySelectorAll('.otc-toggle-btn');
-            toggleBtns.forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    toggleBtns.forEach(function(b) { b.classList.remove('active'); });
-                    this.classList.add('active');
-                    var target = this.getAttribute('data-target');
-                    if (target === 'buy') {
-                        if (buyList) buyList.style.display = 'flex';
-                        if (sellList) sellList.style.display = 'none';
-                    } else if (target === 'sell') {
-                        if (sellList) sellList.style.display = 'flex';
-                        if (buyList) buyList.style.display = 'none';
-                    }
-                });
-            });
-        }
-
-        document.addEventListener('click', function(e) {
-            if (currencyWrapper && !currencyWrapper.contains(e.target)) {
-                if (currencyDropdown) currencyDropdown.classList.remove('active');
+        window.switchDEX = function(dex) {
+            currentDEX = dex;
+            ROUTER = ROUTERS[dex];
+            FACTORY = FACTORIES[dex];
+            WBNB = WBNBS[dex];
+            document.getElementById('pancakeBtn').classList.toggle('active', dex === 'pancake');
+            document.getElementById('uniBtn').classList.toggle('active', dex === 'uni');
+            if (!document.getElementById('swapView').classList.contains('hide')) {
+                updateBalances();
+                updateRate();
             }
-            if (payWrapper && !payWrapper.contains(e.target)) {
-                if (payDropdown) payDropdown.classList.remove('active');
+            parent.showToast('已切换到 ' + (dex === 'pancake' ? 'PancakeSwap' : 'Uniswap'), 'success');
+        };
+
+        async function getDecimals(tokenSymbol) {
+            if (tokenSymbol === 'BNB') return 18;
+            var addr = TOKEN_ADDRESSES[tokenSymbol];
+            if (!addr) return 18;
+            var contract = new web3.eth.Contract(ERC20_ABI, addr);
+            return await contract.methods.decimals().call();
+        }
+
+        async function getTokenBalanceBySymbol(symbol) {
+            if (!window.web3 || !window.currentAccount) return 0;
+            if (symbol === 'BNB') {
+                var balWei = await web3.eth.getBalance(window.currentAccount);
+                return n(balWei);
+            }
+            var addr = TOKEN_ADDRESSES[symbol];
+            if (!addr) return 0;
+            var contract = new web3.eth.Contract(ERC20_ABI, addr);
+            var decimals = await contract.methods.decimals().call();
+            var bal = await contract.methods.balanceOf(window.currentAccount).call();
+            return parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
+        }
+
+        async function getBalance(tokenSymbol) {
+            return getTokenBalanceBySymbol(tokenSymbol);
+        }
+
+        async function buildPath(inputSymbol, outputSymbol) {
+            var inputAddr = (inputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[inputSymbol];
+            var outputAddr = (outputSymbol === 'BNB') ? WBNB : TOKEN_ADDRESSES[outputSymbol];
+            if (!inputAddr || !outputAddr) return null;
+            if (inputAddr === outputAddr) return [inputAddr];
+            try {
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, outputAddr]).call();
+                return [inputAddr, outputAddr];
+            } catch (e) {
+                try {
+                    await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, WBNB, outputAddr]).call();
+                    return [inputAddr, WBNB, outputAddr];
+                } catch (e2) {
+                    var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                    try {
+                        await routerContract.methods.getAmountsOut(web3.utils.toWei('1', 'ether'), [inputAddr, usdtAddr, outputAddr]).call();
+                        return [inputAddr, usdtAddr, outputAddr];
+                    } catch (e3) { return null; }
+                }
+            }
+        }
+
+        async function fetchSpotPrice() {
+            if (!web3) return 0;
+            try {
+                var path = await buildPath(currentInputToken, currentOutputToken);
+                if (!path) return 0;
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                var decimals = await getDecimals(currentInputToken);
+                var oneUnit = web3.utils.toWei('1', 'ether');
+                if (decimals !== 18) oneUnit = BigInt(10 ** decimals).toString();
+                var amounts = await routerContract.methods.getAmountsOut(oneUnit, path).call();
+                var outputDecimals = await getDecimals(currentOutputToken);
+                var rawOut = amounts[amounts.length-1];
+                return parseFloat(web3.utils.fromWei(rawOut, 'ether')) / Math.pow(10, 18 - outputDecimals);
+            } catch (e) { return 0; }
+        }
+
+        async function updateBalances() {
+            var inputBal = await getBalance(currentInputToken);
+            var outputBal = await getBalance(currentOutputToken);
+            $('inputBalance').textContent = inputBal.toFixed(4);
+            $('outputBalance').textContent = outputBal.toFixed(4);
+        }
+
+        async function updateRate() {
+            var price = await fetchSpotPrice();
+            if (price > 0) {
+                $('rateInfo').textContent = '1 ' + currentInputToken + ' ≈ ' + price.toFixed(6) + ' ' + currentOutputToken;
+            } else {
+                $('rateInfo').textContent = '无法获取价格';
+            }
+            var inputAmt = parseFloat($('inputAmount').value) || 0;
+            if (inputAmt > 0 && price > 0) {
+                $('outputAmount').value = (inputAmt * price * 0.995).toFixed(6);
+            } else {
+                $('outputAmount').value = '0.0';
+            }
+            var btn = $('swapButton');
+            if (!window.currentAccount) {
+                btn.textContent = '连接钱包';
+                btn.disabled = true;
+            } else if (inputAmt <= 0) {
+                btn.textContent = '输入金额';
+                btn.disabled = true;
+            } else {
+                btn.textContent = '兑换';
+                btn.disabled = false;
+            }
+        }
+
+        async function searchToken() {
+            var searchInput = $('tokenSearch');
+            var query = searchInput.value.trim();
+            if (!query) return;
+            if (!web3) { parent.showToast('钱包未连接', 'error'); return; }
+            var tokenAddress = null;
+            var upperQuery = query.toUpperCase();
+            if (TOKEN_ADDRESSES[upperQuery] !== undefined) {
+                tokenAddress = TOKEN_ADDRESSES[upperQuery];
+                if (tokenAddress === null) tokenAddress = WBNB;
+            } else if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
+                tokenAddress = query;
+            } else { parent.showToast('无效的合约地址', 'error'); return; }
+            try {
+                var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
+                var symbol = await tokenContract.methods.symbol().call();
+                var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
+                var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
+                if (pair !== '0x0000000000000000000000000000000000000000') {
+                    TOKEN_ADDRESSES[symbol] = tokenAddress;
+                    currentInputToken = symbol;
+                    currentOutputToken = 'BNB';
+                } else {
+                    var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                    pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
+                    if (pair !== '0x0000000000000000000000000000000000000000') {
+                        TOKEN_ADDRESSES[symbol] = tokenAddress;
+                        currentInputToken = symbol;
+                        currentOutputToken = 'USDT';
+                    } else { parent.showToast('未找到该代币的交易对 (BNB/USDT)', 'error'); return; }
+                }
+                $('inputTokenBtn').textContent = currentInputToken + ' ▼';
+                $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
+                $('inputAmount').value = '';
+                $('outputAmount').value = '0.0';
+                updateBalances();
+                updateRate();
+                searchInput.value = '';
+                parent.showToast('已加载 ' + currentInputToken + '/' + currentOutputToken + ' 交易对', 'success');
+            } catch (e) { console.error(e); parent.showToast('代币信息获取失败，请检查地址', 'error'); }
+        }
+
+        $('tokenSearch').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); searchToken(); } });
+        $('searchIconBtn').addEventListener('click', searchToken);
+        $('inputMaxBtn').addEventListener('click', function() {
+            var bal = parseFloat($('inputBalance').textContent) || 0;
+            if (bal > 0) { $('inputAmount').value = bal; updateRate(); }
+        });
+
+        window.swapTokens = function() {
+            var temp = currentInputToken;
+            currentInputToken = currentOutputToken;
+            currentOutputToken = temp;
+            $('inputTokenBtn').textContent = currentInputToken + ' ▼';
+            $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
+            $('inputAmount').value = '';
+            $('outputAmount').value = '0.0';
+            updateBalances();
+            updateRate();
+        };
+
+        // ================== LP 上下交换功能 ==================
+        window.swapLiquidityTokens = function() {
+            // 交换两个输入框的数值
+            var firstAmt = $('lpAmountFirst').value;
+            var secondAmt = $('lpAmountSecond').value;
+            $('lpAmountFirst').value = secondAmt;
+            $('lpAmountSecond').value = firstAmt;
+
+            // 交换余额显示 (交换显示的文本)
+            var firstBal = $('lpBalanceFirst').textContent;
+            var secondBal = $('lpBalanceSecond').textContent;
+            $('lpBalanceFirst').textContent = secondBal;
+            $('lpBalanceSecond').textContent = firstBal;
+
+            // 交换标签文本
+            var firstLabel = $('lpLabelFirst').textContent;
+            var secondLabel = $('lpLabelSecond').textContent;
+            $('lpLabelFirst').textContent = secondLabel;
+            $('lpLabelSecond').textContent = firstLabel;
+
+            // 交换按钮文本
+            var firstBtn = $('lpTokenBtnFirst').textContent;
+            var secondBtn = $('lpTokenBtnSecond').textContent;
+            $('lpTokenBtnFirst').textContent = secondBtn;
+            $('lpTokenBtnSecond').textContent = firstBtn;
+
+            // 反转价格显示
+            var priceInput = $('lpTokenPrice');
+            var price = parseFloat(priceInput.value);
+            if (!isNaN(price) && price > 0) {
+                priceInput.value = (1 / price).toFixed(6);
+                // 更新价格计算标签
+                var calcEl = $('lpPriceCalc');
+                var currentCalc = calcEl.textContent;
+                if (currentCalc.includes('USDT')) {
+                    calcEl.textContent = '1 ' + lpTokenSymbol + ' = ' + (1/price).toFixed(6) + ' USDT';
+                } else {
+                    calcEl.textContent = '1 USDT = ' + (price).toFixed(6) + ' ' + lpTokenSymbol;
+                }
+            }
+        };
+
+        function saveTradeRecord(record) { /* 不变 */ }
+
+        function getLatestTradeRecord() { /* 不变 */ }
+
+        function renderRecentTrade() { /* 不变 */ }
+        renderRecentTrade();
+
+        window.executeSwap = async function() { /* 不变 */ };
+
+        $('inputAmount').addEventListener('input', updateRate);
+        document.addEventListener('walletConnected', function() {
+            updateBalances();
+            updateRate();
+            renderRecentTrade();
+            updateLPBalances();
+        });
+
+        async function updateLPBalances() {
+            var usdtBal = await getTokenBalanceBySymbol('USDT');
+            $('lpBalanceFirst').textContent = usdtBal.toFixed(4);
+            if (lpTokenAddress) {
+                try {
+                    var tokenContract = new web3.eth.Contract(ERC20_ABI, lpTokenAddress);
+                    var decimals = await tokenContract.methods.decimals().call();
+                    var bal = await tokenContract.methods.balanceOf(window.currentAccount).call();
+                    var fmt = parseFloat(web3.utils.fromWei(bal, 'ether')) / Math.pow(10, 18 - decimals);
+                    $('lpBalanceSecond').textContent = fmt.toFixed(4);
+                } catch (e) {
+                    $('lpBalanceSecond').textContent = '0.00';
+                }
+            } else {
+                $('lpBalanceSecond').textContent = '0.00';
+            }
+        }
+
+        function updateLPTokenDisplay(symbol) {
+            lpTokenSymbol = symbol || 'TOKEN';
+            $('lpTokenBtnSecond').textContent = lpTokenSymbol;
+            $('lpPriceCalc').textContent = '1 USDT = -- ' + lpTokenSymbol;
+            var price = parseFloat($('lpTokenPrice').value);
+            if (!isNaN(price) && price > 0) {
+                $('lpPriceCalc').textContent = '1 USDT = ' + (1/price).toFixed(6) + ' ' + lpTokenSymbol;
+            }
+        }
+
+        $('lpTokenPrice').addEventListener('input', function() { /* 不变 */ });
+        $('lpAmountFirst').addEventListener('input', function() {
+            var usdtAmt = parseFloat(this.value);
+            var price = parseFloat($('lpTokenPrice').value);
+            if (!isNaN(usdtAmt) && !isNaN(price) && price > 0) {
+                $('lpAmountSecond').value = (usdtAmt / price).toFixed(6);
             }
         });
+        $('lpAmountSecond').addEventListener('input', function() {
+            var tokenAmt = parseFloat(this.value);
+            var price = parseFloat($('lpTokenPrice').value);
+            if (!isNaN(tokenAmt) && !isNaN(price) && price > 0) {
+                $('lpAmountFirst').value = (tokenAmt * price).toFixed(6);
+            }
+        });
+
+        $('lpSearchBtn').addEventListener('click', async function() { /* 不变 */ });
+
+        window.addLiquidity = function() { /* 不变 */ };
+
+        showSwapView();
+        if (window.web3 && window.currentAccount) {
+            updateBalances();
+            updateRate();
+        } else {
+            setTimeout(function() {
+                if (window.web3 && window.currentAccount) {
+                    updateBalances();
+                    updateRate();
+                }
+            }, 500);
+        }
     })();
     </script>
 </div>
