@@ -166,7 +166,7 @@
             </button>
             <button class="dex-btn" id="uniBtn" onclick="switchDEX('uni')">🦄 Uniswap</button>
         </div>
-        <div class="dex-slogan">一键快输加流动性底池 · 省时省力，平台只是工具不涉及任何资产安全2。</div>
+        <div class="dex-slogan">一键快输加流动性底池 · 省时省力，平台只是工具不涉及任何资产安全。</div>
 
         <div class="swap-title">
             <span id="tabSwap" class="tab-link active" onclick="showSwapView()">兑换</span>
@@ -739,14 +739,14 @@
             }
         }
 
+        // ========== 修改：获取最近10笔添加流动性记录 ==========
         async function fetchPairSwaps(pairAddress, tokenSymbol) {
             var query = `{
-                swaps(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${pairAddress.toLowerCase()}" }) {
+                mints(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${pairAddress.toLowerCase()}" }) {
                     transaction { id }
-                    amount0In
-                    amount1In
-                    amount0Out
-                    amount1Out
+                    amount0
+                    amount1
+                    amountUSD
                     timestamp
                 }
             }`;
@@ -758,29 +758,29 @@
                 });
                 var data = await response.json();
                 if (data.errors) throw new Error(data.errors[0].message);
-                renderLPTradeRecords(data.data.swaps, tokenSymbol);
+                renderLPTradeRecords(data.data.mints, tokenSymbol);
             } catch (e) {
-                console.error('获取交易记录失败:', e);
-                $('tradeRecordContent').innerHTML = '<div class="no-record">⚠️ 暂无交易记录或网络错误</div>';
+                console.error('获取LP记录失败:', e);
+                $('tradeRecordContent').innerHTML = '<div class="no-record">⚠️ 暂无LP记录或网络错误</div>';
             }
         }
 
-        function renderLPTradeRecords(swaps, tokenSymbol) {
+        function renderLPTradeRecords(mints, tokenSymbol) {
             var container = $('tradeRecordContent');
             if (!container) return;
-            if (!swaps || swaps.length === 0) {
-                container.innerHTML = '<div class="no-record">暂无交易记录</div>';
+            if (!mints || mints.length === 0) {
+                container.innerHTML = '<div class="no-record">暂无LP记录</div>';
                 return;
             }
             var html = '';
-            for (var i = 0; i < swaps.length; i++) {
-                var s = swaps[i];
-                var amountUSDT = parseFloat(web3.utils.fromWei(s.amount0In, 'ether')) || parseFloat(web3.utils.fromWei(s.amount1In, 'ether'));
-                var amountToken = parseFloat(web3.utils.fromWei(s.amount0Out, 'ether')) || parseFloat(web3.utils.fromWei(s.amount1Out, 'ether'));
-                var time = new Date(s.timestamp * 1000).toLocaleString();
+            for (var i = 0; i < mints.length; i++) {
+                var m = mints[i];
+                var amount0 = parseFloat(web3.utils.fromWei(m.amount0, 'ether'));
+                var amount1 = parseFloat(web3.utils.fromWei(m.amount1, 'ether'));
+                var time = new Date(m.timestamp * 1000).toLocaleString();
                 html += '<div class="lp-trade-item">' +
-                            '<span class="lp-trade-action">' + (amountToken > 0 ? '买入 ' + tokenSymbol : '卖出 ' + tokenSymbol) + '</span>' +
-                            '<span class="lp-trade-amount">' + (amountUSDT > 0 ? amountUSDT.toFixed(4) + ' USDT' : amountToken.toFixed(4) + ' ' + tokenSymbol) + '</span>' +
+                            '<span class="lp-trade-action">添加 LP</span>' +
+                            '<span class="lp-trade-amount">+' + amount0.toFixed(4) + ' USDT +' + amount1.toFixed(4) + ' ' + tokenSymbol + '</span>' +
                             '<span style="color:#888;font-size:11px;">' + time + '</span>' +
                         '</div>';
             }
@@ -802,7 +802,7 @@
                 parent.showToast('无效的合约地址', 'error');
                 return;
             }
-            $('tradeRecordContent').innerHTML = '<div class="no-record">⏳ 正在获取交易记录...</div>';
+            $('tradeRecordContent').innerHTML = '<div class="no-record">⏳ 正在获取LP记录...</div>';
 
             try {
                 var correctNet = await isCorrectNetwork();
@@ -883,7 +883,6 @@
             }
         });
 
-        // ========== 修复后的 addLiquidity 函数 ==========
         window.addLiquidity = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -968,7 +967,6 @@
                     account, deadline
                 ).send({ from: account });
 
-                // ====== 关键修复：保存交易记录并重新渲染 ======
                 var record = {
                     time: new Date().toLocaleString(),
                     inputToken: 'USDT',
