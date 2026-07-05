@@ -567,6 +567,7 @@
 
         renderRecentTrade();
 
+        // 修复后的 executeSwap（添加 gas 估算）
         window.executeSwap = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -615,13 +616,13 @@
 
                 var deadline = Math.floor(Date.now()/1000) + 600;
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
-                var tx;
+                var tx, gasEstimate;
 
                 if (currentInputToken === 'BNB') {
                     btn.textContent = '等待确认...';
-                    tx = await routerContract.methods.swapExactETHForTokens(
-                        amountOutMinWei, path, account, deadline
-                    ).send({ from: account, value: amountInWei });
+                    var swapMethod = routerContract.methods.swapExactETHForTokens(amountOutMinWei, path, account, deadline);
+                    gasEstimate = await swapMethod.estimateGas({ from: account, value: amountInWei });
+                    tx = await swapMethod.send({ from: account, value: amountInWei, gas: Math.floor(gasEstimate * 1.2) });
                 } else {
                     var tokenAddr = TOKEN_ADDRESSES[currentInputToken];
                     var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
@@ -629,19 +630,21 @@
                     if (BigInt(allowance) < BigInt(amountInWei)) {
                         btn.textContent = '授权中...';
                         parent.showToast('需要授权，请确认', 'info');
-                        await tokenContract.methods.approve(ROUTER, MAX_UINT256).send({ from: account });
+                        var approveTx = tokenContract.methods.approve(ROUTER, MAX_UINT256);
+                        var approveGas = await approveTx.estimateGas({ from: account });
+                        await approveTx.send({ from: account, gas: Math.floor(approveGas * 1.2) });
                         parent.showToast('授权成功，继续兑换', 'success');
                         btn.textContent = '正在兑换...';
                     }
 
                     if (currentOutputToken === 'BNB') {
-                        tx = await routerContract.methods.swapExactTokensForETH(
-                            amountInWei, amountOutMinWei, path, account, deadline
-                        ).send({ from: account });
+                        var swapMethod2 = routerContract.methods.swapExactTokensForETH(amountInWei, amountOutMinWei, path, account, deadline);
+                        gasEstimate = await swapMethod2.estimateGas({ from: account });
+                        tx = await swapMethod2.send({ from: account, gas: Math.floor(gasEstimate * 1.2) });
                     } else {
-                        tx = await routerContract.methods.swapExactTokensForTokens(
-                            amountInWei, amountOutMinWei, path, account, deadline
-                        ).send({ from: account });
+                        var swapMethod3 = routerContract.methods.swapExactTokensForTokens(amountInWei, amountOutMinWei, path, account, deadline);
+                        gasEstimate = await swapMethod3.estimateGas({ from: account });
+                        tx = await swapMethod3.send({ from: account, gas: Math.floor(gasEstimate * 1.2) });
                     }
                 }
 
@@ -810,6 +813,7 @@
             }
         });
 
+        // 添加流动性（已含 gas 估算与授权）
         window.addLiquidity = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -887,12 +891,14 @@
                 var amountAMinFinal = tokenA === usdtAddr ? amountAMin : amountBMin;
                 var amountBMinFinal = tokenA === usdtAddr ? amountBMin : amountAMin;
 
-                var tx = await routerContract.methods.addLiquidity(
+                var addLpMethod = routerContract.methods.addLiquidity(
                     tokenA, tokenB,
                     amountA, amountB,
                     amountAMinFinal, amountBMinFinal,
                     account, deadline
-                ).send({ from: account });
+                );
+                var gasEstimate = await addLpMethod.estimateGas({ from: account });
+                var tx = await addLpMethod.send({ from: account, gas: Math.floor(gasEstimate * 1.2) });
 
                 parent.showToast('流动性添加成功！交易哈希: ' + tx.transactionHash.substring(0, 10) + '...', 'success');
                 $('lpAmountFirst').value = '';
