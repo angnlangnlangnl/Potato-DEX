@@ -739,7 +739,7 @@
             }
         }
 
-        // ========== 修改：获取最近10笔添加流动性记录 ==========
+        // 修复后的 fetchPairSwaps（查询 mints）
         async function fetchPairSwaps(pairAddress, tokenSymbol) {
             var query = `{
                 mints(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${pairAddress.toLowerCase()}" }) {
@@ -756,27 +756,29 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query: query })
                 });
-                var data = await response.json();
-                if (data.errors) throw new Error(data.errors[0].message);
-                renderLPTradeRecords(data.data.mints, tokenSymbol);
+                var json = await response.json();
+                if (json.errors) throw new Error(json.errors[0].message);
+                var mints = json.data ? json.data.mints : [];
+                renderLPTradeRecords(mints, tokenSymbol);
             } catch (e) {
                 console.error('获取LP记录失败:', e);
-                $('tradeRecordContent').innerHTML = '<div class="no-record">⚠️ 暂无LP记录或网络错误</div>';
+                $('tradeRecordContent').innerHTML = '<div class="no-record">⚠️ 网络异常，请稍后重试</div>';
             }
         }
 
+        // 修复后的渲染函数
         function renderLPTradeRecords(mints, tokenSymbol) {
             var container = $('tradeRecordContent');
             if (!container) return;
             if (!mints || mints.length === 0) {
-                container.innerHTML = '<div class="no-record">暂无LP记录</div>';
+                container.innerHTML = '<div class="no-record">暂无 LP 添加记录</div>';
                 return;
             }
             var html = '';
             for (var i = 0; i < mints.length; i++) {
                 var m = mints[i];
-                var amount0 = parseFloat(web3.utils.fromWei(m.amount0, 'ether'));
-                var amount1 = parseFloat(web3.utils.fromWei(m.amount1, 'ether'));
+                var amount0 = parseFloat(web3.utils.fromWei(m.amount0, 'ether')) || 0;
+                var amount1 = parseFloat(web3.utils.fromWei(m.amount1, 'ether')) || 0;
                 var time = new Date(m.timestamp * 1000).toLocaleString();
                 html += '<div class="lp-trade-item">' +
                             '<span class="lp-trade-action">添加 LP</span>' +
