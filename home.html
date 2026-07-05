@@ -166,7 +166,7 @@
             </button>
             <button class="dex-btn" id="uniBtn" onclick="switchDEX('uni')">🦄 Uniswap</button>
         </div>
-        <div class="dex-slogan">一键快输加流动性底池 · 省时省力，平台只是工具不涉及任何资产安全3。</div>
+        <div class="dex-slogan">一键快输加流动性底池 · 省时省力，平台只是工具不涉及任何资产安全4。</div>
 
         <div class="swap-title">
             <span id="tabSwap" class="tab-link active" onclick="showSwapView()">兑换</span>
@@ -299,7 +299,12 @@
         var lpTokenSymbol = 'TOKEN';
         var lpPriceRate = 0;
 
-        var PCS_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2';
+        // 双备份子图端点
+        var SUBGRAPH_URLS = [
+            'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2',
+            'https://gateway.thegraph.com/api/4c66bea4c8bfc4e6f16b4a3a6c9b3c6e/subgraphs/id/3Tk2UMTtFv3p7Qq8s8K3UN2r3Y8s1cUzS4dW6t8Qw6c1'
+        ];
+        var currentSubgraphIndex = 0;
 
         function $(id) { return document.getElementById(id); }
         function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
@@ -739,7 +744,43 @@
             }
         }
 
-        // 修复后的 fetchPairSwaps（查询 mints）
+        // ========== 修复后的 fetchPairSwaps (超时、重试、双备份) ==========
+        async function fetchWithTimeout(url, options, timeout = 8000) {
+            return new Promise(function(resolve, reject) {
+                var timer = setTimeout(function() {
+                    reject(new Error('Request timed out'));
+                }, timeout);
+                fetch(url, options).then(function(response) {
+                    clearTimeout(timer);
+                    resolve(response);
+                }, function(err) {
+                    clearTimeout(timer);
+                    reject(err);
+                });
+            });
+        }
+
+        async function tryFetch(query) {
+            for (var attempt = 0; attempt < SUBGRAPH_URLS.length; attempt++) {
+                var url = SUBGRAPH_URLS[(currentSubgraphIndex + attempt) % SUBGRAPH_URLS.length];
+                try {
+                    var response = await fetchWithTimeout(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: query })
+                    });
+                    var json = await response.json();
+                    if (json.errors) throw new Error(json.errors[0].message);
+                    // 成功则更新下次优先使用的端点
+                    currentSubgraphIndex = (currentSubgraphIndex + attempt) % SUBGRAPH_URLS.length;
+                    return json;
+                } catch (e) {
+                    console.warn('子图端点 ' + url + ' 请求失败: ' + e.message);
+                }
+            }
+            throw new Error('所有子图端点请求均失败');
+        }
+
         async function fetchPairSwaps(pairAddress, tokenSymbol) {
             var query = `{
                 mints(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${pairAddress.toLowerCase()}" }) {
@@ -751,13 +792,7 @@
                 }
             }`;
             try {
-                var response = await fetch(PCS_SUBGRAPH, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: query })
-                });
-                var json = await response.json();
-                if (json.errors) throw new Error(json.errors[0].message);
+                var json = await tryFetch(query);
                 var mints = json.data ? json.data.mints : [];
                 renderLPTradeRecords(mints, tokenSymbol);
             } catch (e) {
@@ -766,7 +801,6 @@
             }
         }
 
-        // 修复后的渲染函数
         function renderLPTradeRecords(mints, tokenSymbol) {
             var container = $('tradeRecordContent');
             if (!container) return;
