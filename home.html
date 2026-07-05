@@ -8,7 +8,7 @@
             border-radius: 16px; 
             padding: 20px; 
             margin-bottom: 15px; 
-            color: #ccd6f0;
+            color: #ccd6f0; 
             overflow: hidden;
         }
         .swap-title { font-size: 16px; font-weight: bold; margin-bottom: 4px; color: #f0b90b; }
@@ -145,7 +145,7 @@
 
         .lp-trade-card {
             margin-top: 12px;
-            display: none;
+            display: block;
         }
         .lp-trade-card .trade-record-header { margin-bottom: 8px; }
         .lp-trade-list { max-height: 200px; overflow-y: auto; }
@@ -245,7 +245,9 @@
                 <div class="trade-record-header">
                     <span class="trade-record-title">📋 最近10笔交易</span>
                 </div>
-                <div class="lp-trade-list" id="lpTradeList"></div>
+                <div class="lp-trade-list" id="lpTradeList">
+                    <div class="no-record">搜索合约后将显示交易记录</div>
+                </div>
             </div>
         </div>
     </div>
@@ -361,8 +363,7 @@
             document.getElementById('pancakeBtn').classList.toggle('active', dex === 'pancake');
             document.getElementById('uniBtn').classList.toggle('active', dex === 'uni');
             updateLPButton();
-            var tradeCard = $('lpTradeCard');
-            if (tradeCard) tradeCard.style.display = 'none';
+            $('lpTradeList').innerHTML = '<div class="no-record">搜索合约后将显示交易记录</div>';
             if (!document.getElementById('swapView').classList.contains('hide')) {
                 updateBalances();
                 updateRate();
@@ -776,7 +777,7 @@
                 renderPairSwaps(data.data.swaps, tokenSymbol);
             } catch (e) {
                 console.error('获取交易记录失败:', e);
-                $('lpTradeCard').style.display = 'none';
+                $('lpTradeList').innerHTML = '<div class="no-record">⚠️ 暂无交易记录或网络错误</div>';
             }
         }
 
@@ -784,7 +785,7 @@
             var container = $('lpTradeList');
             if (!container) return;
             if (!swaps || swaps.length === 0) {
-                $('lpTradeCard').style.display = 'none';
+                container.innerHTML = '<div class="no-record">暂无交易记录</div>';
                 return;
             }
             var html = '';
@@ -800,7 +801,6 @@
                         '</div>';
             }
             container.innerHTML = html;
-            $('lpTradeCard').style.display = 'block';
         }
 
         function isCorrectNetwork() {
@@ -810,7 +810,6 @@
             }).catch(function() { return false; });
         }
 
-        // ====== 修复搜索合约获取信息失败 ======
         $('lpSearchBtn').addEventListener('click', async function() {
             var addr = $('lpContractSearch').value.trim();
             if (!web3 || !addr) return;
@@ -818,8 +817,7 @@
                 parent.showToast('无效的合约地址', 'error');
                 return;
             }
-            var tradeCard = $('lpTradeCard');
-            if (tradeCard) tradeCard.style.display = 'none';
+            $('lpTradeList').innerHTML = '<div class="no-record">⏳ 正在获取交易记录...</div>';
 
             try {
                 var correctNet = await isCorrectNetwork();
@@ -830,7 +828,6 @@
 
                 var contract = new web3.eth.Contract(ERC20_ABI, addr);
                 var symbol;
-                // 容错获取符号
                 try {
                     symbol = await contract.methods.symbol().call();
                 } catch (e1) {
@@ -854,7 +851,6 @@
                     parent.showToast('未找到与 USDT 的交易对，仍可尝试创建', 'info');
                 }
 
-                // 尝试获取价格
                 var tokenPrice = await fetchTokenPriceInUSDT(addr);
                 if (tokenPrice > 0) {
                     lpPriceRate = 1 / tokenPrice;
@@ -863,14 +859,14 @@
                 }
                 updatePriceDisplay();
 
-                // 尝试获取交易记录
-                if (pair !== '0x0000000000000000000000000000000000000000') {
-                    fetchPairSwaps(pair, symbol);
+                var targetPair = pair;
+                if (targetPair === '0x0000000000000000000000000000000000000000') {
+                    targetPair = await factoryContract.methods.getPair(addr, WBNB).call();
+                }
+                if (targetPair !== '0x0000000000000000000000000000000000000000') {
+                    fetchPairSwaps(targetPair, symbol);
                 } else {
-                    var pair2 = await factoryContract.methods.getPair(addr, WBNB).call();
-                    if (pair2 !== '0x0000000000000000000000000000000000000000') {
-                        fetchPairSwaps(pair2, symbol);
-                    }
+                    $('lpTradeList').innerHTML = '<div class="no-record">未找到交易对</div>';
                 }
 
                 $('lpContractSearch').value = symbol;
@@ -880,7 +876,7 @@
             } catch (e) {
                 console.error(e);
                 parent.showToast('获取代币信息失败', 'error');
-                $('lpTradeCard').style.display = 'none';
+                $('lpTradeList').innerHTML = '<div class="no-record">⚠️ 获取信息失败</div>';
             }
         });
 
@@ -902,23 +898,114 @@
             }
         });
 
-        window.addLiquidity = function() {
-            var usdt = $('lpAmountFirst').value;
-            var tokenAmt = $('lpAmountSecond').value;
+        // ========== 真实添加流动性 ==========
+        window.addLiquidity = async function() {
+            if (!window.currentAccount) {
+                parent.showToast('请先连接钱包', 'error');
+                return;
+            }
             if (!lpTokenAddress) {
                 parent.showToast('请先搜索并加载代币合约', 'error');
                 return;
             }
-            if (!lpPriceRate || !usdt) {
-                parent.showToast('请输入USDT数量', 'error');
+            var usdtAmount = $('lpAmountFirst').value;
+            var tokenAmount = $('lpAmountSecond').value;
+            if (!usdtAmount || parseFloat(usdtAmount) <= 0) {
+                parent.showToast('请输入 USDT 数量', 'error');
                 return;
             }
-            parent.showToast(
-                '正在通过 ' + (currentDEX === 'pancake' ? 'PancakeSwap' : 'Uniswap') +
-                ' 添加流动性\nRouter: ' + ROUTER.substring(0, 10) + '...' +
-                '\n(链上交易开发中，当前为演示)',
-                'info'
-            );
+            if (!tokenAmount || parseFloat(tokenAmount) <= 0) {
+                parent.showToast('请输入代币数量', 'error');
+                return;
+            }
+
+            var btn = $('lpAddBtn');
+            btn.disabled = true;
+            btn.textContent = '添加 LP 中...';
+
+            try {
+                var account = window.currentAccount;
+                var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                var tokenAddr = lpTokenAddress;
+
+                // 获取小数位数
+                var usdtDecimals = await getDecimals('USDT');
+                var tokenDecimals = await new web3.eth.Contract(ERC20_ABI, tokenAddr).methods.decimals().call();
+
+                // 转换为最小单位
+                var amountADesired = web3.utils.toWei(usdtAmount, 'ether');
+                if (usdtDecimals !== 18) {
+                    amountADesired = BigInt(Math.floor(parseFloat(usdtAmount) * (10 ** usdtDecimals))).toString();
+                }
+                var amountBDesired = web3.utils.toWei(tokenAmount, 'ether');
+                if (tokenDecimals !== 18) {
+                    amountBDesired = BigInt(Math.floor(parseFloat(tokenAmount) * (10 ** tokenDecimals))).toString();
+                }
+
+                // 计算最小数量（滑点 0.5%）
+                var amountAMin = (BigInt(amountADesired) * BigInt(995) / BigInt(1000)).toString();
+                var amountBMin = (BigInt(amountBDesired) * BigInt(995) / BigInt(1000)).toString();
+
+                // 授权 USDT
+                var usdtContract = new web3.eth.Contract(ERC20_ABI, usdtAddr);
+                var usdtAllowance = await usdtContract.methods.allowance(account, ROUTER).call();
+                if (BigInt(usdtAllowance) < BigInt(amountADesired)) {
+                    btn.textContent = '授权 USDT...';
+                    parent.showToast('请确认授权 USDT', 'info');
+                    var approveTx = usdtContract.methods.approve(ROUTER, MAX_UINT256);
+                    var approveGas = await approveTx.estimateGas({ from: account });
+                    await approveTx.send({ from: account, gas: Math.floor(approveGas * 1.2) });
+                    parent.showToast('USDT 授权成功', 'success');
+                }
+
+                // 授权代币
+                var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
+                var tokenAllowance = await tokenContract.methods.allowance(account, ROUTER).call();
+                if (BigInt(tokenAllowance) < BigInt(amountBDesired)) {
+                    btn.textContent = '授权 ' + lpTokenSymbol + '...';
+                    parent.showToast('请确认授权 ' + lpTokenSymbol, 'info');
+                    var approveTx2 = tokenContract.methods.approve(ROUTER, MAX_UINT256);
+                    var approveGas2 = await approveTx2.estimateGas({ from: account });
+                    await approveTx2.send({ from: account, gas: Math.floor(approveGas2 * 1.2) });
+                    parent.showToast(lpTokenSymbol + ' 授权成功', 'success');
+                }
+
+                // 调用 addLiquidity
+                btn.textContent = '正在添加流动性...';
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                var deadline = Math.floor(Date.now() / 1000) + 600;
+
+                // 确保 token0/token1 顺序正确（PancakeSwap 通常按地址升序排序）
+                var tokenA = usdtAddr.toLowerCase() < tokenAddr.toLowerCase() ? usdtAddr : tokenAddr;
+                var tokenB = tokenA === usdtAddr ? tokenAddr : usdtAddr;
+                var amountA = tokenA === usdtAddr ? amountADesired : amountBDesired;
+                var amountB = tokenA === usdtAddr ? amountBDesired : amountADesired;
+                var amountAMinFinal = tokenA === usdtAddr ? amountAMin : amountBMin;
+                var amountBMinFinal = tokenA === usdtAddr ? amountBMin : amountAMin;
+
+                var tx = await routerContract.methods.addLiquidity(
+                    tokenA, tokenB,
+                    amountA, amountB,
+                    amountAMinFinal, amountBMinFinal,
+                    account, deadline
+                ).send({ from: account });
+
+                parent.showToast('流动性添加成功！交易哈希: ' + tx.transactionHash.substring(0, 10) + '...', 'success');
+                $('lpAmountFirst').value = '';
+                $('lpAmountSecond').value = '';
+                updateLPBalances();
+            } catch (e) {
+                console.error(e);
+                var msg = e.message || '';
+                if (msg.includes('User denied') || msg.includes('rejected')) {
+                    parent.showToast('交易已取消', 'error');
+                } else {
+                    parent.showToast('添加 LP 失败: ' + msg.substring(0, 100), 'error');
+                }
+            } finally {
+                btn.disabled = false;
+                updateLPButton(); // 恢复按钮文字
+            }
         };
 
         updateLPButton();
