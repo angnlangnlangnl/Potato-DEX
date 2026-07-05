@@ -6,7 +6,7 @@
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 16px; 
-            padding: 20px;
+            padding: 20px; 
             margin-bottom: 15px; 
             color: #ccd6f0; 
             overflow: hidden;
@@ -142,21 +142,6 @@
         .tx-hash { color: #4ecca3; font-size: 12px; text-decoration: none; word-break: break-all; }
         .tx-hash:hover { text-decoration: underline; }
         .no-record { text-align: center; color: #888; font-size: 14px; padding: 10px 0; }
-
-        .lp-trade-card {
-            margin-top: 12px;
-            display: block;
-        }
-        .lp-trade-card .trade-record-header { margin-bottom: 8px; }
-        .lp-trade-list { max-height: 200px; overflow-y: auto; }
-        .lp-trade-item {
-            display: flex; justify-content: space-between;
-            padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 12px;
-        }
-        .lp-trade-item:last-child { border-bottom: none; }
-        .lp-trade-action { color: #4ecca3; }
-        .lp-trade-amount { color: #ccd6f0; }
     </style>
 
     <div class="glass-card">
@@ -240,15 +225,6 @@
             </div>
             <div class="slippage" style="margin-top: 2px;">滑点容忍度: 0.5%</div>
             <button class="swap-btn" id="lpAddBtn" onclick="addLiquidity()">添加 PancakeSwap V2 LP</button>
-
-            <div class="glass-card lp-trade-card" id="lpTradeCard">
-                <div class="trade-record-header">
-                    <span class="trade-record-title">📋 最近10笔交易</span>
-                </div>
-                <div class="lp-trade-list" id="lpTradeList">
-                    <div class="no-record">搜索合约后将显示交易记录</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -315,8 +291,6 @@
         var lpTokenSymbol = 'TOKEN';
         var lpPriceRate = 0;
 
-        var PCS_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2';
-
         function $(id) { return document.getElementById(id); }
         function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
 
@@ -363,7 +337,6 @@
             document.getElementById('pancakeBtn').classList.toggle('active', dex === 'pancake');
             document.getElementById('uniBtn').classList.toggle('active', dex === 'uni');
             updateLPButton();
-            $('lpTradeList').innerHTML = '<div class="no-record">搜索合约后将显示交易记录</div>';
             if (!document.getElementById('swapView').classList.contains('hide')) {
                 updateBalances();
                 updateRate();
@@ -755,61 +728,6 @@
             }
         }
 
-        async function fetchPairSwaps(pairAddress, tokenSymbol) {
-            var query = `{
-                swaps(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${pairAddress.toLowerCase()}" }) {
-                    transaction { id }
-                    amount0In
-                    amount1In
-                    amount0Out
-                    amount1Out
-                    timestamp
-                }
-            }`;
-            try {
-                var response = await fetch(PCS_SUBGRAPH, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: query })
-                });
-                var data = await response.json();
-                if (data.errors) throw new Error(data.errors[0].message);
-                renderPairSwaps(data.data.swaps, tokenSymbol);
-            } catch (e) {
-                console.error('获取交易记录失败:', e);
-                $('lpTradeList').innerHTML = '<div class="no-record">⚠️ 暂无交易记录或网络错误</div>';
-            }
-        }
-
-        function renderPairSwaps(swaps, tokenSymbol) {
-            var container = $('lpTradeList');
-            if (!container) return;
-            if (!swaps || swaps.length === 0) {
-                container.innerHTML = '<div class="no-record">暂无交易记录</div>';
-                return;
-            }
-            var html = '';
-            for (var i = 0; i < swaps.length; i++) {
-                var s = swaps[i];
-                var amountUSDT = parseFloat(web3.utils.fromWei(s.amount0In, 'ether')) || parseFloat(web3.utils.fromWei(s.amount1In, 'ether'));
-                var amountToken = parseFloat(web3.utils.fromWei(s.amount0Out, 'ether')) || parseFloat(web3.utils.fromWei(s.amount1Out, 'ether'));
-                var time = new Date(s.timestamp * 1000).toLocaleString();
-                html += '<div class="lp-trade-item">' +
-                            '<span class="lp-trade-action">' + (amountToken > 0 ? '买入 ' + tokenSymbol : '卖出 ' + tokenSymbol) + '</span>' +
-                            '<span class="lp-trade-amount">' + (amountUSDT > 0 ? amountUSDT.toFixed(4) + ' USDT' : amountToken.toFixed(4) + ' ' + tokenSymbol) + '</span>' +
-                            '<span style="color:#888;font-size:11px;">' + time + '</span>' +
-                        '</div>';
-            }
-            container.innerHTML = html;
-        }
-
-        function isCorrectNetwork() {
-            return window.ethereum && window.ethereum.request({ method: 'eth_chainId' }).then(function(chainId) {
-                var expected = currentDEX === 'pancake' ? '0x38' : '0x1';
-                return chainId === expected;
-            }).catch(function() { return false; });
-        }
-
         $('lpSearchBtn').addEventListener('click', async function() {
             var addr = $('lpContractSearch').value.trim();
             if (!web3 || !addr) return;
@@ -817,8 +735,6 @@
                 parent.showToast('无效的合约地址', 'error');
                 return;
             }
-            $('lpTradeList').innerHTML = '<div class="no-record">⏳ 正在获取交易记录...</div>';
-
             try {
                 var correctNet = await isCorrectNetwork();
                 if (!correctNet) {
@@ -859,16 +775,6 @@
                 }
                 updatePriceDisplay();
 
-                var targetPair = pair;
-                if (targetPair === '0x0000000000000000000000000000000000000000') {
-                    targetPair = await factoryContract.methods.getPair(addr, WBNB).call();
-                }
-                if (targetPair !== '0x0000000000000000000000000000000000000000') {
-                    fetchPairSwaps(targetPair, symbol);
-                } else {
-                    $('lpTradeList').innerHTML = '<div class="no-record">未找到交易对</div>';
-                }
-
                 $('lpContractSearch').value = symbol;
                 updateLPBalances();
                 $('lpAmountFirst').value = '';
@@ -876,9 +782,15 @@
             } catch (e) {
                 console.error(e);
                 parent.showToast('获取代币信息失败', 'error');
-                $('lpTradeList').innerHTML = '<div class="no-record">⚠️ 获取信息失败</div>';
             }
         });
+
+        function isCorrectNetwork() {
+            return window.ethereum && window.ethereum.request({ method: 'eth_chainId' }).then(function(chainId) {
+                var expected = currentDEX === 'pancake' ? '0x38' : '0x1';
+                return chainId === expected;
+            }).catch(function() { return false; });
+        }
 
         $('lpAmountFirst').addEventListener('input', function() {
             var usdtAmt = parseFloat(this.value);
@@ -898,7 +810,6 @@
             }
         });
 
-        // ========== 真实添加流动性 ==========
         window.addLiquidity = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -928,11 +839,9 @@
                 var usdtAddr = TOKEN_ADDRESSES['USDT'];
                 var tokenAddr = lpTokenAddress;
 
-                // 获取小数位数
                 var usdtDecimals = await getDecimals('USDT');
                 var tokenDecimals = await new web3.eth.Contract(ERC20_ABI, tokenAddr).methods.decimals().call();
 
-                // 转换为最小单位
                 var amountADesired = web3.utils.toWei(usdtAmount, 'ether');
                 if (usdtDecimals !== 18) {
                     amountADesired = BigInt(Math.floor(parseFloat(usdtAmount) * (10 ** usdtDecimals))).toString();
@@ -942,11 +851,9 @@
                     amountBDesired = BigInt(Math.floor(parseFloat(tokenAmount) * (10 ** tokenDecimals))).toString();
                 }
 
-                // 计算最小数量（滑点 0.5%）
                 var amountAMin = (BigInt(amountADesired) * BigInt(995) / BigInt(1000)).toString();
                 var amountBMin = (BigInt(amountBDesired) * BigInt(995) / BigInt(1000)).toString();
 
-                // 授权 USDT
                 var usdtContract = new web3.eth.Contract(ERC20_ABI, usdtAddr);
                 var usdtAllowance = await usdtContract.methods.allowance(account, ROUTER).call();
                 if (BigInt(usdtAllowance) < BigInt(amountADesired)) {
@@ -958,7 +865,6 @@
                     parent.showToast('USDT 授权成功', 'success');
                 }
 
-                // 授权代币
                 var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
                 var tokenAllowance = await tokenContract.methods.allowance(account, ROUTER).call();
                 if (BigInt(tokenAllowance) < BigInt(amountBDesired)) {
@@ -970,12 +876,10 @@
                     parent.showToast(lpTokenSymbol + ' 授权成功', 'success');
                 }
 
-                // 调用 addLiquidity
                 btn.textContent = '正在添加流动性...';
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
                 var deadline = Math.floor(Date.now() / 1000) + 600;
 
-                // 确保 token0/token1 顺序正确（PancakeSwap 通常按地址升序排序）
                 var tokenA = usdtAddr.toLowerCase() < tokenAddr.toLowerCase() ? usdtAddr : tokenAddr;
                 var tokenB = tokenA === usdtAddr ? tokenAddr : usdtAddr;
                 var amountA = tokenA === usdtAddr ? amountADesired : amountBDesired;
@@ -1004,7 +908,7 @@
                 }
             } finally {
                 btn.disabled = false;
-                updateLPButton(); // 恢复按钮文字
+                updateLPButton();
             }
         };
 
