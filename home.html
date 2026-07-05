@@ -166,7 +166,7 @@
             </button>
             <button class="dex-btn" id="uniBtn" onclick="switchDEX('uni')">🦄 Uniswap</button>
         </div>
-        <div class="dex-slogan">一键加流动性底池 · 省时省力，平台只是工具不涉及任何资产安全1。</div>
+        <div class="dex-slogan">一键快输加流动性底池 · 省时省力，平台只是工具不涉及任何资产安全2。</div>
 
         <div class="swap-title">
             <span id="tabSwap" class="tab-link active" onclick="showSwapView()">兑换</span>
@@ -328,7 +328,6 @@
             document.getElementById('tabLP').classList.remove('active');
             updateBalances();
             updateRate();
-            // 恢复兑换交易记录
             renderRecentTrade();
         };
         window.showLPView = function() {
@@ -339,7 +338,6 @@
             updateLPButton();
             updateLPBalances();
             updatePriceDisplay();
-            // 不清除记录，保留之前搜索到的LP交易记录或兑换记录
         };
 
         window.switchDEX = function(dex) {
@@ -885,6 +883,7 @@
             }
         });
 
+        // ========== 修复后的 addLiquidity 函数 ==========
         window.addLiquidity = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -969,11 +968,21 @@
                     account, deadline
                 ).send({ from: account });
 
-                parent.showToast('流动性添加成功！交易哈希: ' + tx.transactionHash.substring(0, 10) + '...', 'success');
+                // ====== 关键修复：保存交易记录并重新渲染 ======
+                var record = {
+                    time: new Date().toLocaleString(),
+                    inputToken: 'USDT',
+                    outputToken: lpTokenSymbol,
+                    inputAmount: usdtAmount,
+                    outputAmount: tokenAmount,
+                    txHash: tx.transactionHash
+                };
+                saveTradeRecord(record);
+                renderRecentTrade();
+                parent.showToast('流动性添加成功！', 'success');
                 $('lpAmountFirst').value = '';
                 $('lpAmountSecond').value = '';
                 updateLPBalances();
-                // 添加成功后不自动刷新记录，保持原有记录
             } catch (e) {
                 console.error(e);
                 var msg = e.message || '';
