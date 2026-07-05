@@ -142,13 +142,6 @@
         .tx-hash { color: #4ecca3; font-size: 12px; text-decoration: none; word-break: break-all; }
         .tx-hash:hover { text-decoration: underline; }
         .no-record { text-align: center; color: #888; font-size: 14px; padding: 10px 0; }
-
-        .lp-trade-card {
-            margin-top: 12px;
-            display: block;
-        }
-        .lp-trade-card .trade-record-header { margin-bottom: 8px; }
-        .lp-trade-list { max-height: 200px; overflow-y: auto; }
         .lp-trade-item {
             display: flex; justify-content: space-between;
             padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -240,15 +233,6 @@
             </div>
             <div class="slippage" style="margin-top: 2px;">滑点容忍度: 0.5%</div>
             <button class="swap-btn" id="lpAddBtn" onclick="addLiquidity()">添加 PancakeSwap V2 LP</button>
-
-            <div class="glass-card lp-trade-card" id="lpTradeCard">
-                <div class="trade-record-header">
-                    <span class="trade-record-title">📋 最近10笔交易</span>
-                </div>
-                <div class="lp-trade-list" id="lpTradeList">
-                    <div class="no-record">搜索合约后将显示交易记录</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -344,6 +328,8 @@
             document.getElementById('tabLP').classList.remove('active');
             updateBalances();
             updateRate();
+            // 恢复兑换交易记录
+            renderRecentTrade();
         };
         window.showLPView = function() {
             document.getElementById('swapView').classList.add('hide');
@@ -353,6 +339,7 @@
             updateLPButton();
             updateLPBalances();
             updatePriceDisplay();
+            // 不清除记录，保留之前搜索到的LP交易记录或兑换记录
         };
 
         window.switchDEX = function(dex) {
@@ -363,7 +350,6 @@
             document.getElementById('pancakeBtn').classList.toggle('active', dex === 'pancake');
             document.getElementById('uniBtn').classList.toggle('active', dex === 'uni');
             updateLPButton();
-            $('lpTradeList').innerHTML = '<div class="no-record">搜索合约后将显示交易记录</div>';
             if (!document.getElementById('swapView').classList.contains('hide')) {
                 updateBalances();
                 updateRate();
@@ -774,15 +760,15 @@
                 });
                 var data = await response.json();
                 if (data.errors) throw new Error(data.errors[0].message);
-                renderPairSwaps(data.data.swaps, tokenSymbol);
+                renderLPTradeRecords(data.data.swaps, tokenSymbol);
             } catch (e) {
                 console.error('获取交易记录失败:', e);
-                $('lpTradeList').innerHTML = '<div class="no-record">⚠️ 暂无交易记录或网络错误</div>';
+                $('tradeRecordContent').innerHTML = '<div class="no-record">⚠️ 暂无交易记录或网络错误</div>';
             }
         }
 
-        function renderPairSwaps(swaps, tokenSymbol) {
-            var container = $('lpTradeList');
+        function renderLPTradeRecords(swaps, tokenSymbol) {
+            var container = $('tradeRecordContent');
             if (!container) return;
             if (!swaps || swaps.length === 0) {
                 container.innerHTML = '<div class="no-record">暂无交易记录</div>';
@@ -801,6 +787,7 @@
                         '</div>';
             }
             container.innerHTML = html;
+            $('tradeTime').textContent = '交易对: ' + tokenSymbol + '/USDT';
         }
 
         function isCorrectNetwork() {
@@ -817,7 +804,7 @@
                 parent.showToast('无效的合约地址', 'error');
                 return;
             }
-            $('lpTradeList').innerHTML = '<div class="no-record">⏳ 正在获取交易记录...</div>';
+            $('tradeRecordContent').innerHTML = '<div class="no-record">⏳ 正在获取交易记录...</div>';
 
             try {
                 var correctNet = await isCorrectNetwork();
@@ -866,7 +853,7 @@
                 if (targetPair !== '0x0000000000000000000000000000000000000000') {
                     fetchPairSwaps(targetPair, symbol);
                 } else {
-                    $('lpTradeList').innerHTML = '<div class="no-record">未找到交易对</div>';
+                    $('tradeRecordContent').innerHTML = '<div class="no-record">未找到交易对</div>';
                 }
 
                 $('lpContractSearch').value = symbol;
@@ -876,7 +863,7 @@
             } catch (e) {
                 console.error(e);
                 parent.showToast('获取代币信息失败', 'error');
-                $('lpTradeList').innerHTML = '<div class="no-record">⚠️ 获取信息失败</div>';
+                $('tradeRecordContent').innerHTML = '<div class="no-record">⚠️ 获取信息失败</div>';
             }
         });
 
@@ -898,7 +885,6 @@
             }
         });
 
-        // ========== 真实添加流动性 ==========
         window.addLiquidity = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -928,11 +914,9 @@
                 var usdtAddr = TOKEN_ADDRESSES['USDT'];
                 var tokenAddr = lpTokenAddress;
 
-                // 获取小数位数
                 var usdtDecimals = await getDecimals('USDT');
                 var tokenDecimals = await new web3.eth.Contract(ERC20_ABI, tokenAddr).methods.decimals().call();
 
-                // 转换为最小单位
                 var amountADesired = web3.utils.toWei(usdtAmount, 'ether');
                 if (usdtDecimals !== 18) {
                     amountADesired = BigInt(Math.floor(parseFloat(usdtAmount) * (10 ** usdtDecimals))).toString();
@@ -942,11 +926,9 @@
                     amountBDesired = BigInt(Math.floor(parseFloat(tokenAmount) * (10 ** tokenDecimals))).toString();
                 }
 
-                // 计算最小数量（滑点 0.5%）
                 var amountAMin = (BigInt(amountADesired) * BigInt(995) / BigInt(1000)).toString();
                 var amountBMin = (BigInt(amountBDesired) * BigInt(995) / BigInt(1000)).toString();
 
-                // 授权 USDT
                 var usdtContract = new web3.eth.Contract(ERC20_ABI, usdtAddr);
                 var usdtAllowance = await usdtContract.methods.allowance(account, ROUTER).call();
                 if (BigInt(usdtAllowance) < BigInt(amountADesired)) {
@@ -958,7 +940,6 @@
                     parent.showToast('USDT 授权成功', 'success');
                 }
 
-                // 授权代币
                 var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
                 var tokenAllowance = await tokenContract.methods.allowance(account, ROUTER).call();
                 if (BigInt(tokenAllowance) < BigInt(amountBDesired)) {
@@ -970,12 +951,10 @@
                     parent.showToast(lpTokenSymbol + ' 授权成功', 'success');
                 }
 
-                // 调用 addLiquidity
                 btn.textContent = '正在添加流动性...';
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
                 var deadline = Math.floor(Date.now() / 1000) + 600;
 
-                // 确保 token0/token1 顺序正确（PancakeSwap 通常按地址升序排序）
                 var tokenA = usdtAddr.toLowerCase() < tokenAddr.toLowerCase() ? usdtAddr : tokenAddr;
                 var tokenB = tokenA === usdtAddr ? tokenAddr : usdtAddr;
                 var amountA = tokenA === usdtAddr ? amountADesired : amountBDesired;
@@ -994,6 +973,7 @@
                 $('lpAmountFirst').value = '';
                 $('lpAmountSecond').value = '';
                 updateLPBalances();
+                // 添加成功后不自动刷新记录，保持原有记录
             } catch (e) {
                 console.error(e);
                 var msg = e.message || '';
@@ -1004,7 +984,7 @@
                 }
             } finally {
                 btn.disabled = false;
-                updateLPButton(); // 恢复按钮文字
+                updateLPButton();
             }
         };
 
