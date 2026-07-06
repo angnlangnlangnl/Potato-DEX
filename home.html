@@ -458,7 +458,7 @@
             }
         }
 
-        // ========== 多端点子图查询（mints优先，fallback swaps） ==========
+        // ========== 多端点子图查询（合并mints和swaps） ==========
         async function subgraphQuery(query) {
             for (var i = 0; i < SUBGRAPH_URLS.length; i++) {
                 var url = SUBGRAPH_URLS[i];
@@ -488,49 +488,49 @@
             container.innerHTML = '<div class="no-record">⏳ 正在获取记录...</div>';
 
             var lowerPair = pairAddress.toLowerCase();
-            var mints = null;
-            // 尝试 mints
+
+            // 并行查询 mints 和 swaps
+            var mintsQuery = `{ mints(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${lowerPair}" }) { transaction { id } amount0 amount1 amountUSD timestamp } }`;
+            var swapsQuery = `{ swaps(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${lowerPair}" }) { transaction { id } amount0In amount1In amount0Out amount1Out timestamp } }`;
+
+            var mints = [], swaps = [];
             try {
-                var mintsQuery = `{ mints(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${lowerPair}" }) { transaction { id } amount0 amount1 amountUSD timestamp } }`;
-                var data = await subgraphQuery(mintsQuery);
-                if (data && data.mints) mints = data.mints;
+                var mintsData = await subgraphQuery(mintsQuery);
+                if (mintsData && mintsData.mints) mints = mintsData.mints.map(function(m) { return Object.assign({}, m, { type: 'mint' }); });
             } catch(e) { console.warn('mints query failed', e); }
 
-            if (mints && mints.length > 0) {
-                renderPairEvents(mints, tokenSymbol, 'lp');
-                return;
-            }
-
-            // 回退 swaps
-            var swaps = null;
             try {
-                var swapsQuery = `{ swaps(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${lowerPair}" }) { transaction { id } amount0In amount1In amount0Out amount1Out timestamp } }`;
-                var sdata = await subgraphQuery(swapsQuery);
-                if (sdata && sdata.swaps) swaps = sdata.swaps;
+                var swapsData = await subgraphQuery(swapsQuery);
+                if (swapsData && swapsData.swaps) swaps = swapsData.swaps.map(function(s) { return Object.assign({}, s, { type: 'swap' }); });
             } catch(e) { console.warn('swaps query failed', e); }
 
-            if (swaps && swaps.length > 0) {
-                renderPairEvents(swaps, tokenSymbol, 'swap');
-            } else {
+            // 合并并按时间戳降序排列
+            var allEvents = mints.concat(swaps);
+            allEvents.sort(function(a, b) { return b.timestamp - a.timestamp; });
+            // 取前10条
+            var topEvents = allEvents.slice(0, 10);
+
+            if (topEvents.length === 0) {
                 container.innerHTML = '<div class="no-record">暂无交易记录</div>';
+                return;
             }
+            renderCombinedEvents(topEvents, tokenSymbol);
         }
 
-        function renderPairEvents(events, tokenSymbol, type) {
+        function renderCombinedEvents(events, tokenSymbol) {
             var container = $('tradeRecordContent');
             if (!container) return;
             var html = '';
             for (var i = 0; i < events.length; i++) {
                 var ev = events[i];
-                if (type === 'lp') {
+                var time = new Date(ev.timestamp * 1000).toLocaleString();
+                if (ev.type === 'mint') {
                     var a0 = parseFloat(web3.utils.fromWei(ev.amount0, 'ether')) || 0;
                     var a1 = parseFloat(web3.utils.fromWei(ev.amount1, 'ether')) || 0;
-                    var time = new Date(ev.timestamp * 1000).toLocaleString();
-                    html += '<div class="lp-trade-item"><span class="lp-trade-action">添加 LP</span><span class="lp-trade-amount">+' + a0.toFixed(4) + ' USDT +' + a1.toFixed(4) + ' ' + tokenSymbol + '</span><span style="color:#888;font-size:11px;">' + time + '</span></div>';
+                    html += '<div class="lp-trade-item"><span class="lp-trade-action">添加LP</span><span class="lp-trade-amount">' + a0.toFixed(4) + ' USDT + ' + a1.toFixed(4) + ' ' + tokenSymbol + '</span><span style="color:#888;font-size:11px;">' + time + '</span></div>';
                 } else {
                     var aIn = parseFloat(web3.utils.fromWei(ev.amount0In, 'ether')) || parseFloat(web3.utils.fromWei(ev.amount1In, 'ether'));
                     var aOut = parseFloat(web3.utils.fromWei(ev.amount0Out, 'ether')) || parseFloat(web3.utils.fromWei(ev.amount1Out, 'ether'));
-                    var time = new Date(ev.timestamp * 1000).toLocaleString();
                     html += '<div class="lp-trade-item"><span class="lp-trade-action">Swap</span><span class="lp-trade-amount">' + aIn.toFixed(4) + ' USDT → ' + aOut.toFixed(4) + ' ' + tokenSymbol + '</span><span style="color:#888;font-size:11px;">' + time + '</span></div>';
                 }
             }
@@ -548,7 +548,7 @@
             var networkOk = await ensureCorrectNetwork();
             if (!networkOk) return;
 
-            $('tradeRecordContent').innerHTML = '<div class="no-record">⏳ 正在获取LP记录...</div>';
+            $('tradeRecordContent').innerHTML = '<div class="no-record">⏳ 正在获取记录...</div>';
 
             try {
                 var contract = new web3.eth.Contract(ERC20_ABI, addr);
