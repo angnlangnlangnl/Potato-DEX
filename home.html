@@ -202,7 +202,6 @@
         var lpTokenSymbol = 'TOKEN';
         var lpPriceRate = 0;
 
-        // 多个子图端点（优先国内可访问节点）
         var SUBGRAPH_URLS = [
             'https://bsc.streamingfast.io/subgraphs/name/pancakeswap/exchange-v2',
             'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2'
@@ -320,7 +319,49 @@
             btn.textContent = !window.currentAccount ? '连接钱包' : (inputAmt <= 0 ? '输入金额' : '兑换');
         }
 
-        async function searchToken() { /* 保持不变 */ }
+        // ========== 修复后的搜索代币函数 ==========
+        async function searchToken() {
+            var searchInput = $('tokenSearch');
+            var query = searchInput.value.trim();
+            if (!query) return;
+            if (!web3) { parent.showToast('钱包未连接', 'error'); return; }
+            var tokenAddress = null;
+            var upperQuery = query.toUpperCase();
+            // 先检查已知代币符号
+            if (TOKEN_ADDRESSES[upperQuery] !== undefined) {
+                tokenAddress = TOKEN_ADDRESSES[upperQuery];
+                if (tokenAddress === null) tokenAddress = WBNB; // BNB
+            } else if (/^0x[a-fA-F0-9]{40}$/.test(query)) {
+                tokenAddress = query;
+            } else { parent.showToast('无效的合约地址或未知代币', 'error'); return; }
+            try {
+                var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
+                var symbol = await tokenContract.methods.symbol().call();
+                var factoryContract = new web3.eth.Contract(FACTORY_ABI, FACTORY);
+                var pair = await factoryContract.methods.getPair(tokenAddress, WBNB).call();
+                if (pair !== '0x0000000000000000000000000000000000000000') {
+                    TOKEN_ADDRESSES[symbol] = tokenAddress;
+                    currentInputToken = symbol;
+                    currentOutputToken = 'BNB';
+                } else {
+                    var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                    pair = await factoryContract.methods.getPair(tokenAddress, usdtAddr).call();
+                    if (pair !== '0x0000000000000000000000000000000000000000') {
+                        TOKEN_ADDRESSES[symbol] = tokenAddress;
+                        currentInputToken = symbol;
+                        currentOutputToken = 'USDT';
+                    } else { parent.showToast('未找到该代币的交易对 (BNB/USDT)', 'error'); return; }
+                }
+                $('inputTokenBtn').textContent = currentInputToken + ' ▼';
+                $('outputTokenBtn').textContent = currentOutputToken + ' ▼';
+                $('inputAmount').value = '';
+                $('outputAmount').value = '0.0';
+                updateBalances();
+                updateRate();
+                searchInput.value = '';
+                parent.showToast('已加载 ' + currentInputToken + '/' + currentOutputToken + ' 交易对', 'success');
+            } catch (e) { console.error(e); parent.showToast('代币信息获取失败，请检查地址', 'error'); }
+        }
 
         $('tokenSearch').addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); searchToken(); } });
         $('searchIconBtn').addEventListener('click', searchToken);
@@ -415,7 +456,6 @@
             }
         }
 
-        // ========== 网络自动切换 ==========
         async function ensureCorrectNetwork() {
             if (!window.ethereum) return false;
             var expectedChainId = currentDEX === 'pancake' ? '0x38' : '0x1';
@@ -458,7 +498,6 @@
             }
         }
 
-        // ========== 多端点子图查询（合并mints和swaps） ==========
         async function subgraphQuery(query) {
             for (var i = 0; i < SUBGRAPH_URLS.length; i++) {
                 var url = SUBGRAPH_URLS[i];
@@ -489,7 +528,6 @@
 
             var lowerPair = pairAddress.toLowerCase();
 
-            // 并行查询 mints 和 swaps
             var mintsQuery = `{ mints(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${lowerPair}" }) { transaction { id } amount0 amount1 amountUSD timestamp } }`;
             var swapsQuery = `{ swaps(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${lowerPair}" }) { transaction { id } amount0In amount1In amount0Out amount1Out timestamp } }`;
 
@@ -504,10 +542,8 @@
                 if (swapsData && swapsData.swaps) swaps = swapsData.swaps.map(function(s) { return Object.assign({}, s, { type: 'swap' }); });
             } catch(e) { console.warn('swaps query failed', e); }
 
-            // 合并并按时间戳降序排列
             var allEvents = mints.concat(swaps);
             allEvents.sort(function(a, b) { return b.timestamp - a.timestamp; });
-            // 取前10条
             var topEvents = allEvents.slice(0, 10);
 
             if (topEvents.length === 0) {
@@ -543,7 +579,6 @@
             if (!web3 || !addr) return;
             if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { parent.showToast('无效的合约地址', 'error'); return; }
             
-            // 确保网络正确
             $('tradeRecordContent').innerHTML = '<div class="no-record">⏳ 检查网络...</div>';
             var networkOk = await ensureCorrectNetwork();
             if (!networkOk) return;
@@ -593,7 +628,6 @@
             else $('lpAmountFirst').value = '';
         });
 
-        // ========== 添加流动性（完整实现） ==========
         window.addLiquidity = async function() {
             if (!window.currentAccount) {
                 parent.showToast('请先连接钱包', 'error');
@@ -638,7 +672,6 @@
                 var amountAMin = (BigInt(amountADesired) * BigInt(995) / BigInt(1000)).toString();
                 var amountBMin = (BigInt(amountBDesired) * BigInt(995) / BigInt(1000)).toString();
 
-                // 授权 USDT
                 var usdtContract = new web3.eth.Contract(ERC20_ABI, usdtAddr);
                 var usdtAllowance = await usdtContract.methods.allowance(account, ROUTER).call();
                 if (BigInt(usdtAllowance) < BigInt(amountADesired)) {
@@ -650,7 +683,6 @@
                     parent.showToast('USDT 授权成功', 'success');
                 }
 
-                // 授权代币
                 var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
                 var tokenAllowance = await tokenContract.methods.allowance(account, ROUTER).call();
                 if (BigInt(tokenAllowance) < BigInt(amountBDesired)) {
@@ -662,7 +694,6 @@
                     parent.showToast(lpTokenSymbol + ' 授权成功', 'success');
                 }
 
-                // 添加流动性
                 btn.textContent = '正在添加流动性...';
                 var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
                 var deadline = Math.floor(Date.now() / 1000) + 600;
@@ -681,7 +712,6 @@
                     account, deadline
                 ).send({ from: account });
 
-                // 保存交易记录
                 var record = {
                     time: new Date().toLocaleString(),
                     inputToken: 'USDT',
