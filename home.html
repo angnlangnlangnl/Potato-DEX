@@ -593,7 +593,122 @@
             else $('lpAmountFirst').value = '';
         });
 
-        window.addLiquidity = async function() { /* 保持不变 */ };
+        // ========== 添加流动性（完整实现） ==========
+        window.addLiquidity = async function() {
+            if (!window.currentAccount) {
+                parent.showToast('请先连接钱包', 'error');
+                return;
+            }
+            if (!lpTokenAddress) {
+                parent.showToast('请先搜索并加载代币合约', 'error');
+                return;
+            }
+            var usdtAmount = $('lpAmountFirst').value;
+            var tokenAmount = $('lpAmountSecond').value;
+            if (!usdtAmount || parseFloat(usdtAmount) <= 0) {
+                parent.showToast('请输入 USDT 数量', 'error');
+                return;
+            }
+            if (!tokenAmount || parseFloat(tokenAmount) <= 0) {
+                parent.showToast('请输入代币数量', 'error');
+                return;
+            }
+
+            var btn = $('lpAddBtn');
+            btn.disabled = true;
+            btn.textContent = '添加 LP 中...';
+
+            try {
+                var account = window.currentAccount;
+                var usdtAddr = TOKEN_ADDRESSES['USDT'];
+                var tokenAddr = lpTokenAddress;
+
+                var usdtDecimals = await getDecimals('USDT');
+                var tokenDecimals = await new web3.eth.Contract(ERC20_ABI, tokenAddr).methods.decimals().call();
+
+                var amountADesired = web3.utils.toWei(usdtAmount, 'ether');
+                if (usdtDecimals !== 18) {
+                    amountADesired = BigInt(Math.floor(parseFloat(usdtAmount) * (10 ** usdtDecimals))).toString();
+                }
+                var amountBDesired = web3.utils.toWei(tokenAmount, 'ether');
+                if (tokenDecimals !== 18) {
+                    amountBDesired = BigInt(Math.floor(parseFloat(tokenAmount) * (10 ** tokenDecimals))).toString();
+                }
+
+                var amountAMin = (BigInt(amountADesired) * BigInt(995) / BigInt(1000)).toString();
+                var amountBMin = (BigInt(amountBDesired) * BigInt(995) / BigInt(1000)).toString();
+
+                // 授权 USDT
+                var usdtContract = new web3.eth.Contract(ERC20_ABI, usdtAddr);
+                var usdtAllowance = await usdtContract.methods.allowance(account, ROUTER).call();
+                if (BigInt(usdtAllowance) < BigInt(amountADesired)) {
+                    btn.textContent = '授权 USDT...';
+                    parent.showToast('请确认授权 USDT', 'info');
+                    var approveTx = usdtContract.methods.approve(ROUTER, MAX_UINT256);
+                    var approveGas = await approveTx.estimateGas({ from: account });
+                    await approveTx.send({ from: account, gas: Math.floor(approveGas * 1.2) });
+                    parent.showToast('USDT 授权成功', 'success');
+                }
+
+                // 授权代币
+                var tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddr);
+                var tokenAllowance = await tokenContract.methods.allowance(account, ROUTER).call();
+                if (BigInt(tokenAllowance) < BigInt(amountBDesired)) {
+                    btn.textContent = '授权 ' + lpTokenSymbol + '...';
+                    parent.showToast('请确认授权 ' + lpTokenSymbol, 'info');
+                    var approveTx2 = tokenContract.methods.approve(ROUTER, MAX_UINT256);
+                    var approveGas2 = await approveTx2.estimateGas({ from: account });
+                    await approveTx2.send({ from: account, gas: Math.floor(approveGas2 * 1.2) });
+                    parent.showToast(lpTokenSymbol + ' 授权成功', 'success');
+                }
+
+                // 添加流动性
+                btn.textContent = '正在添加流动性...';
+                var routerContract = new web3.eth.Contract(ROUTER_ABI, ROUTER);
+                var deadline = Math.floor(Date.now() / 1000) + 600;
+
+                var tokenA = usdtAddr.toLowerCase() < tokenAddr.toLowerCase() ? usdtAddr : tokenAddr;
+                var tokenB = tokenA === usdtAddr ? tokenAddr : usdtAddr;
+                var amountA = tokenA === usdtAddr ? amountADesired : amountBDesired;
+                var amountB = tokenA === usdtAddr ? amountBDesired : amountADesired;
+                var amountAMinFinal = tokenA === usdtAddr ? amountAMin : amountBMin;
+                var amountBMinFinal = tokenA === usdtAddr ? amountBMin : amountAMin;
+
+                var tx = await routerContract.methods.addLiquidity(
+                    tokenA, tokenB,
+                    amountA, amountB,
+                    amountAMinFinal, amountBMinFinal,
+                    account, deadline
+                ).send({ from: account });
+
+                // 保存交易记录
+                var record = {
+                    time: new Date().toLocaleString(),
+                    inputToken: 'USDT',
+                    outputToken: lpTokenSymbol,
+                    inputAmount: usdtAmount,
+                    outputAmount: tokenAmount,
+                    txHash: tx.transactionHash
+                };
+                saveTradeRecord(record);
+                renderRecentTrade();
+                parent.showToast('流动性添加成功！', 'success');
+                $('lpAmountFirst').value = '';
+                $('lpAmountSecond').value = '';
+                updateLPBalances();
+            } catch (e) {
+                console.error(e);
+                var msg = e.message || '';
+                if (msg.includes('User denied') || msg.includes('rejected')) {
+                    parent.showToast('交易已取消', 'error');
+                } else {
+                    parent.showToast('添加 LP 失败: ' + msg.substring(0, 100), 'error');
+                }
+            } finally {
+                btn.disabled = false;
+                updateLPButton();
+            }
+        };
 
         updateLPButton();
         showSwapView();
