@@ -202,7 +202,11 @@
         var lpTokenSymbol = 'TOKEN';
         var lpPriceRate = 0;
 
-        var PCS_SUBGRAPH = 'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2';
+        // 多个子图端点（优先国内可访问节点）
+        var SUBGRAPH_URLS = [
+            'https://bsc.streamingfast.io/subgraphs/name/pancakeswap/exchange-v2',
+            'https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2'
+        ];
 
         function $(id) { return document.getElementById(id); }
         function n(w) { return parseFloat(web3.utils.fromWei(w, 'ether')); }
@@ -411,16 +415,14 @@
             }
         }
 
-        // ========== 核心修复：自动切换网络 ==========
+        // ========== 网络自动切换 ==========
         async function ensureCorrectNetwork() {
             if (!window.ethereum) return false;
             var expectedChainId = currentDEX === 'pancake' ? '0x38' : '0x1';
-            var expectedChainIdDec = currentDEX === 'pancake' ? 56 : 1;
             try {
                 var currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
                 if (currentChainId === expectedChainId) return true;
                 
-                // 尝试切换网络
                 try {
                     await window.ethereum.request({
                         method: 'wallet_switchEthereumChain',
@@ -428,7 +430,6 @@
                     });
                     return true;
                 } catch (switchError) {
-                    // 如果网络未添加，则添加网络
                     if (switchError.code === 4902) {
                         var networkParams = currentDEX === 'pancake' ? {
                             chainId: '0x38',
@@ -457,29 +458,38 @@
             }
         }
 
-        // 获取历史记录（mints优先，fallback swaps）
+        // ========== 多端点子图查询（mints优先，fallback swaps） ==========
+        async function subgraphQuery(query) {
+            for (var i = 0; i < SUBGRAPH_URLS.length; i++) {
+                var url = SUBGRAPH_URLS[i];
+                try {
+                    var ctrl = new AbortController();
+                    var timer = setTimeout(function() { ctrl.abort(); }, 8000);
+                    var resp = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: query }),
+                        signal: ctrl.signal
+                    });
+                    clearTimeout(timer);
+                    var json = await resp.json();
+                    if (json.errors) throw new Error(json.errors[0].message);
+                    return json.data;
+                } catch(e) {
+                    console.warn('子图端点 ' + url + ' 请求失败: ' + e.message);
+                }
+            }
+            throw new Error('所有子图端点均不可用');
+        }
+
         async function fetchPairEvents(pairAddress, tokenSymbol) {
             var container = $('tradeRecordContent');
             if (!container) return;
             container.innerHTML = '<div class="no-record">⏳ 正在获取记录...</div>';
 
-            async function subgraphQuery(query) {
-                var ctrl = new AbortController();
-                var timer = setTimeout(() => ctrl.abort(), 8000);
-                var resp = await fetch(PCS_SUBGRAPH, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query }),
-                    signal: ctrl.signal
-                });
-                clearTimeout(timer);
-                var json = await resp.json();
-                if (json.errors) throw new Error(json.errors[0].message);
-                return json.data;
-            }
-
             var lowerPair = pairAddress.toLowerCase();
             var mints = null;
+            // 尝试 mints
             try {
                 var mintsQuery = `{ mints(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${lowerPair}" }) { transaction { id } amount0 amount1 amountUSD timestamp } }`;
                 var data = await subgraphQuery(mintsQuery);
@@ -491,6 +501,7 @@
                 return;
             }
 
+            // 回退 swaps
             var swaps = null;
             try {
                 var swapsQuery = `{ swaps(first: 10, orderBy: timestamp, orderDirection: desc, where: { pair: "${lowerPair}" }) { transaction { id } amount0In amount1In amount0Out amount1Out timestamp } }`;
@@ -532,10 +543,10 @@
             if (!web3 || !addr) return;
             if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { parent.showToast('无效的合约地址', 'error'); return; }
             
-            // 先确保网络正确（自动切换）
+            // 确保网络正确
             $('tradeRecordContent').innerHTML = '<div class="no-record">⏳ 检查网络...</div>';
             var networkOk = await ensureCorrectNetwork();
-            if (!networkOk) return; // 用户取消切换或失败
+            if (!networkOk) return;
 
             $('tradeRecordContent').innerHTML = '<div class="no-record">⏳ 正在获取LP记录...</div>';
 
